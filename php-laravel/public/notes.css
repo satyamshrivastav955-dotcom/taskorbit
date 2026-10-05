@@ -1,0 +1,8 @@
+body { font-family: Inter, sans-serif; background: #F6F8FB; color: #1F2A37; max-width: 900px; margin: 0 auto; padding: 24px; }
+h1 { color: #2D3F54; font-size: 22px; }
+table { width: 100%; border-collapse: collapse; background: #fff; }
+td, th { border: 1px solid #E2E8F0; padding: 8px 12px; font-size: 13px; text-align: left; }
+th { font-size: 11px; text-transform: uppercase; color: #52647A; }
+input, textarea, select { border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 12px; font-size: 14px; width: 100%; margin-bottom: 12px; }
+button { background: #006ECF; color: #fff; border: 0; border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer; }
+form { background: #fff; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 16px; }

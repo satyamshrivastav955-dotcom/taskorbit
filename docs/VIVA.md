@@ -1,0 +1,8 @@
+# VIVA preparation
+
+- Why custom claims: role travels inside the Firebase ID token, verifiable offline by Admin SDK and readable in Firestore/Storage rules via `request.auth.token.role`. No extra lookup, tamper-proof (signed by Google). Frontend checks are UX only.
+- Why Express on Firebase: Firestore has no server-side state machine or cross-document conflict sync. Express + Admin SDK enforces transitions (409 otherwise), computes `conflictWith` on both sides, writes activity + notifications atomically-ish, exposes flattened export for MySQL.
+- Conflict detection: `a.start <= b.end AND b.start <= a.end` on day granularity, same assignee, different id, status != approved. Pure function in `conflictService.js`, tested for no/partial/full/touching/different-assignee/approved cases. Never blocks creation; UI dialog offers Assign anyway / Change dates / Pick another assignee; manager notified.
+- Status state machine: `todo -> in_progress -> submitted -> in_review -> approved|revision`, `revision -> in_progress`. Enforced in `canTransition`; wrong moves return 409. Project auto-completes when all tasks approved; progress = approved/total.
+- Layered security: Firebase Auth -> custom claim -> Express `verifyToken` + `requireRole` -> Firestore/Storage rules keyed on `role` and ownership -> frontend `RequireRole` redirect only for UX.
+- Syllabus mapping: Firebase Auth/Firestore (auth + NoSQL), Express + Jest (backend + testing), MySQL sync (RDBMS + idempotent ETL), Spring Boot analytics (REST + JPA + Security + JUnit), Servlet/JSP (MVC + JSTL + JDBC + filters + print CSS), Laravel Blade (validation + file handling + feature tests), Git/Postman/Hosting (tooling).
