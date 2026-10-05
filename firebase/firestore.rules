@@ -1,11 +1,63 @@
-// Phase 0 placeholder. Full rules land in Phase 2 (v1) and Phase 8 (hardened).
-// Principle: frontend role checks are UX only; real enforcement is
-// Express middleware + these rules. Deny by default until Phase 2.
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+    function role() { return request.auth.token.role; }
+    function signedIn() { return request.auth != null; }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || role() == 'manager');
+      allow write: if false;
+    }
+    match /projects/{id} {
+      allow create: if signedIn() && role() == 'client';
+      allow read: if signedIn() && (
+        role() == 'manager' ||
+        (role() == 'client' && resource.data.clientId == request.auth.uid) ||
+        role() in ['assignee', 'reviewer']
+      );
+      allow update: if signedIn() && role() == 'client'
+        && resource.data.clientId == request.auth.uid
+        && resource.data.status == 'draft';
+      allow delete: if false;
+    }
+    match /requirements/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && role() == 'client';
+      allow update, delete: if false;
+    }
+    match /tasks/{id} {
+      allow read: if signedIn() && (
+        role() == 'manager' ||
+        (role() == 'client') ||
+        (role() == 'assignee' && resource.data.assigneeId == request.auth.uid) ||
+        (role() == 'reviewer' && resource.data.reviewerId == request.auth.uid)
+      );
+      // Tasks written only through the backend. Deny direct client writes
+      // to conflictWith and status.
+      allow create, update, delete: if false;
+    }
+    match /submissions/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && role() == 'assignee';
+      allow update, delete: if false;
+    }
+    match /reviews/{id} {
+      allow read: if signedIn();
+      allow create, update, delete: if false;
+    }
+    match /notifications/{uid} {
+      allow read: if signedIn();
+      allow update: if signedIn();
+      allow create, delete: if false;
+    }
+    match /notifications/{id} {
+      allow read: if signedIn();
+      allow update: if signedIn();
+      allow create, delete: if false;
+    }
+    match /activityLogs/{id} {
+      allow read: if signedIn();
+      allow create, update, delete: if false;
     }
   }
 }
