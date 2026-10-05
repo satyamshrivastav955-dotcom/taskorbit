@@ -1,0 +1,8 @@
+// Phase 0 placeholder. Full rules land in Phase 2 (v1) and Phase 8 (hardened).
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

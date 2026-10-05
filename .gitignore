@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+node-backend/node_modules/
+php-laravel/vendor/
+php-laravel/node_modules/
+
+# Builds / outputs
+frontend/dist/
+node-backend/dist/
+springboot-service/target/
+servlet-jsp/target/
+servlet-jsp/*.war
+php-laravel/storage/*.key
+
+# Env and secrets - never commit real values
+.env
+.env.local
+.env.*.local
+frontend/.env
+node-backend/.env
+springboot-service/src/main/resources/application-local.properties
+php-laravel/.env
+service-account*.json
+**/serviceAccountKey.json
+firebase-service-key.json
+node-backend/credentials/
+
+# Firebase
+.firebase/
+.firebaserc
+firebase-debug.log
+firestore-debug.log
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.iml
+*.class
+
+# MySQL / data dumps
+*.sql.gz
+*.dump
+
+# Misc
+coverage/
+.nyc_output/
+tmp/
+temp/

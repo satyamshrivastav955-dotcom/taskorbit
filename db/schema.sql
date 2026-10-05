@@ -1,0 +1,2 @@
+-- TaskOrbit reporting DB. Full schema lands in Phase 9.
+-- Database: taskorbit_reports (MySQL 8).

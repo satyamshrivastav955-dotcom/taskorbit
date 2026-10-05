@@ -1,0 +1,28 @@
+{
+  "name": "taskorbit-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "echo \"no frontend tests in Phase 0\" && exit 0"
+  },
+  "dependencies": {
+    "firebase": "^10.12.0",
+    "lucide-react": "^0.400.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.23.0",
+    "@reduxjs/toolkit": "^2.2.5",
+    "react-redux": "^9.1.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "typescript": "^5.4.5",
+    "vite": "^5.3.1"
+  }
+}

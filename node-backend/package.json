@@ -1,0 +1,27 @@
+{
+  "name": "taskorbit-backend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "node src/server.js",
+    "test": "jest --runInBand",
+    "seed": "node scripts/seed.js",
+    "sync": "node scripts/syncToMysql.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "firebase-admin": "^12.1.1",
+    "mysql2": "^3.9.7"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  }
+}
