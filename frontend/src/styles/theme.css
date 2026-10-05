@@ -1,0 +1,86 @@
+:root {
+  /* TaskOrbit Brand Palette */
+  --navy-dark: #1E293B;
+  --navy-sidebar: #0F172A;
+  --navy-card: #1E2235;
+  --slate: #52647A;
+  --slate-dark: #334155;
+  --slate-light: #94A3B8;
+
+  /* Primary Brand Accent (Indigo/Purple from reference UI) */
+  --primary: #4F46E5;
+  --primary-hover: #4338CA;
+  --primary-light: #EEF2FF;
+  --primary-gradient: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+  --sidebar-active-gradient: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%);
+
+  /* Semantic Colors */
+  --green: #10B981;
+  --green-light: #ECFDF5;
+  --green-border: #A7F3D0;
+  --green-text: #065F46;
+
+  --blue-dark: #004C94;
+  --blue: #006ECF;
+  --blue-light: #3C93FA;
+  --blue-bg: #EFF6FF;
+  --blue-text: #1E40AF;
+
+  --cyan: #00D4C6;
+  --teal: #0FA69D;
+  --teal-dark: #028183;
+
+  --amber: #F59E0B;
+  --amber-light: #FFFBEB;
+  --amber-border: #FDE68A;
+  --amber-text: #92400E;
+
+  --red: #EF4444;
+  --red-light: #FEF2F2;
+  --red-border: #FECACA;
+  --red-text: #991B1B;
+
+  --purple: #8B5CF6;
+  --purple-light: #F5F3FF;
+  --purple-text: #5B21B6;
+
+  /* Neutrals & Surfaces */
+  --white: #FFFFFF;
+  --background: #F6F8FB;
+  --surface: #FFFFFF;
+  --surface-hover: #F8FAFC;
+  --surface-subtle: #F1F5F9;
+  --border: #E2E8F0;
+  --border-light: #EDF2F7;
+  --border-strong: #CBD5E1;
+
+  /* Typography */
+  --text-primary: #1E293B;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+  --text-inverse: #FFFFFF;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Spacing Scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+}

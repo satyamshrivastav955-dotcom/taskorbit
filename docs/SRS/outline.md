@@ -33,8 +33,10 @@ Out of scope: self-registration, payments, chat, Gantt drag-and-drop, mobile app
 
 ## 4. Functional requirements
 
-1. One login page `/login`; role from ID token claims redirects to
-   `/client`, `/manager`, `/assignee`, `/reviewer`.
+1. One login page `/login` plus public `/register` (name, email, password,
+   role choice). Role is stored as an ID token custom claim + `users/{uid}`
+   and routes to `/client`, `/manager`, `/assignee`, `/reviewer`.
+   Enforcement stays server-side (guards, middleware, rules).
 2. Client creates project with requirements + file attach (Storage).
 3. Manager creates/edits/reassigns/deletes tasks via Express API with
    conflict check; conflicts never block, UI shows Assign anyway /

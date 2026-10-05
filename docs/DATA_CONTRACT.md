@@ -148,6 +148,7 @@ and the relevant notification.
 
 | method | route                    | role     | notes                              |
 | ------ | ------------------------ | -------- | ---------------------------------- |
+| POST   | /auth/register           | public   | self-registration + role choice, sets claim |
 | POST   | /projects/:id/tasks      | manager  | create + conflict check            |
 | PUT    | /tasks/:id               | manager  | edit + conflict re-check           |
 | POST   | /tasks/:id/reassign      | manager  |                                    |

@@ -1,0 +1,7 @@
+body { font-family: Inter, sans-serif; background: #F6F8FB; color: #1F2A37; }
+table { width: 100%; border-collapse: collapse; background: #fff; }
+th { font-size: 11px; text-transform: uppercase; color: #52647A; text-align: left; }
+td, th { border: 1px solid #E2E8F0; padding: 8px 12px; font-size: 13px; }
+.bar { background: #E2E8F0; border-radius: 8px; height: 8px; }
+.fill { background: #006ECF; height: 8px; border-radius: 8px; }
+@media print { button { display: none; } body { background: #fff; } }

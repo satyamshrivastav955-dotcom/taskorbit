@@ -1,0 +1,10 @@
+{
+  "info": { "name": "TaskOrbit Spring Analytics", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+  "item": [
+    { "name": "summary", "request": { "method": "GET", "url": "{{base}}/api/analytics/projects/:id/summary", "header": [{ "key": "X-API-Key", "value": "{{key}}" }] } },
+    { "name": "assignees", "request": { "method": "GET", "url": "{{base}}/api/analytics/projects/:id/assignees", "header": [{ "key": "X-API-Key", "value": "{{key}}" }] } },
+    { "name": "conflicts", "request": { "method": "GET", "url": "{{base}}/api/analytics/conflicts", "header": [{ "key": "X-API-Key", "value": "{{key}}" }] } },
+    { "name": "review stats", "request": { "method": "GET", "url": "{{base}}/api/analytics/reviews/stats", "header": [{ "key": "X-API-Key", "value": "{{key}}" }] } },
+    { "name": "health", "request": { "method": "GET", "url": "{{base}}/api/analytics/health", "header": [{ "key": "X-API-Key", "value": "{{key}}" }] } }
+  ]
+}

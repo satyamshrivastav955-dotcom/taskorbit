@@ -1,0 +1,336 @@
+.shell {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--bg-body);
+}
+
+/* Left Marketing Hero Column */
+.side {
+  width: 480px;
+  background-color: #0E1322;
+  color: #FFFFFF;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  .side {
+    display: none;
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brandIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+.brandText {
+  font-size: 22px;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: -0.5px;
+}
+
+.heroContent {
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.heroTitle {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #FFFFFF;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.heroTitle span {
+  background: linear-gradient(135deg, #818CF8 0%, #60A5FA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.heroDesc {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #94A3B8;
+  margin: 0;
+}
+
+/* Floating Glass Dashboard Preview */
+.floatingGlassCard {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.glassHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.glassTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.glassBadge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34D399;
+}
+
+.glassProgressWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.glassProgressLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: #94A3B8;
+}
+
+.glassProgressBar {
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.glassProgressFill {
+  width: 84%;
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #6366F1, #38BDF8);
+}
+
+.featuresList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.featureItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13.5px;
+  color: #CBD5E1;
+}
+
+.featureDot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.2);
+  color: #818CF8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sideFooter {
+  font-size: 12px;
+  color: #64748B;
+}
+
+/* Right Main Column */
+.main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 480px;
+  background-color: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  padding: 40px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.headingArea {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Quick 1-Click Role Login Section */
+.demoRolesSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.demoRolesLabel {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rolesGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.roleBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: #FFFFFF;
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.roleBtn:hover {
+  border-color: var(--primary-500);
+  background-color: #EEF2FF;
+  transform: translateY(-1px);
+}
+
+.roleBtnTitle {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: block;
+}
+
+.roleBtnUser {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: block;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 4px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: var(--border-color);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: var(--primary-600);
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+}
+
+.submitBtn:hover {
+  background-color: var(--primary-700);
+}
+
+.error {
+  padding: 10px 12px;
+  background-color: #FEE2E2;
+  color: #B91C1C;
+  border-radius: 8px;
+  font-size: 13px;
+  margin: 0;
+}
+
+.footer {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.footer a {
+  color: var(--primary-600);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}

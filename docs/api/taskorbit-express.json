@@ -1,0 +1,17 @@
+{
+  "info": { "name": "TaskOrbit Express API", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+  "item": [
+    { "name": "health", "request": { "method": "GET", "url": "{{base}}/health" } },
+    { "name": "create task", "request": { "method": "POST", "url": "{{base}}/projects/:id/tasks", "body": { "mode": "raw", "raw": "{\"title\":\"Set up staging environment\",\"assigneeId\":\"UID\",\"reviewerId\":\"UID\",\"startDate\":\"2026-10-01\",\"deadline\":\"2026-10-05\",\"priority\":\"medium\"}" } } },
+    { "name": "update task", "request": { "method": "PUT", "url": "{{base}}/tasks/:id" } },
+    { "name": "reassign", "request": { "method": "POST", "url": "{{base}}/tasks/:id/reassign" } },
+    { "name": "delete task", "request": { "method": "DELETE", "url": "{{base}}/tasks/:id" } },
+    { "name": "start", "request": { "method": "POST", "url": "{{base}}/tasks/:id/start" } },
+    { "name": "submit", "request": { "method": "POST", "url": "{{base}}/tasks/:id/submit" } },
+    { "name": "open-review", "request": { "method": "POST", "url": "{{base}}/tasks/:id/open-review" } },
+    { "name": "review", "request": { "method": "POST", "url": "{{base}}/tasks/:id/review", "body": { "mode": "raw", "raw": "{\"decision\":\"approved\",\"comments\":\"Looks good\"}" } } },
+    { "name": "conflicts", "request": { "method": "GET", "url": "{{base}}/conflicts" } },
+    { "name": "export report", "request": { "method": "GET", "url": "{{base}}/export/report/:projectId" } },
+    { "name": "export all", "request": { "method": "GET", "url": "{{base}}/export/all" } }
+  ]
+}

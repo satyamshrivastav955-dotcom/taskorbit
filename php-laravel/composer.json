@@ -1,0 +1,5 @@
+{
+  "name": "taskorbit/report-notes",
+  "require": { "php": "^8.2", "laravel/framework": "^11.0" },
+  "scripts": { "test": "php artisan test" }
+}

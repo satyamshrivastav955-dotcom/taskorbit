@@ -1,0 +1,93 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 120ms, border-color 120ms;
+  white-space: nowrap;
+  font-family: inherit;
+  line-height: 1;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary - Electric Blue matching Visuvate Studio */
+.primary {
+  background: var(--blue-600);
+  color: #fff;
+  border-color: var(--blue-600);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--blue-700);
+  border-color: var(--blue-700);
+}
+
+/* Secondary - Dark Pill button */
+.secondary {
+  background: var(--surface-pill);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+
+/* Success (Approve only) */
+.success {
+  background: var(--green-500);
+  color: #064E3B;
+  border-color: var(--green-500);
+}
+
+.success:hover:not(:disabled) {
+  background: #10B981;
+  border-color: #10B981;
+}
+
+/* Danger — outline style for inline use */
+.danger {
+  background: var(--surface);
+  color: var(--red-500);
+  border-color: var(--red-500);
+}
+
+.danger:hover:not(:disabled) {
+  background: rgba(239,68,68,.12);
+}
+
+/* Danger filled — only inside confirmation dialogs */
+.dangerFilled {
+  background: var(--red-500);
+  color: #fff;
+  border-color: var(--red-500);
+}
+
+.dangerFilled:hover:not(:disabled) {
+  background: #DC2626;
+  border-color: #DC2626;
+}
+
+/* Ghost */
+.ghost {
+  background: transparent;
+  color: var(--blue-400);
+  border-color: transparent;
+  padding: 0 8px;
+}
+
+.ghost:hover:not(:disabled) {
+  background: rgba(0,119,255,.12);
+}

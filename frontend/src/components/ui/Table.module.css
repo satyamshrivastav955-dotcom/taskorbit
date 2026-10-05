@@ -1,0 +1,129 @@
+.wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  background: var(--surface);
+}
+
+.searchInput {
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 10px;
+  font-size: 13px;
+  background: var(--surface-pill);
+  color: var(--text);
+  font-family: inherit;
+  transition: border-color 120ms;
+  min-width: 180px;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--blue-600);
+  box-shadow: 0 0 0 2px rgba(0,119,255,.3);
+}
+
+.count {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.table {
+  font-size: 13px;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  text-align: left;
+  padding: 0 14px;
+  height: 36px;
+  border-bottom: 1px solid var(--border);
+  background: #14161F;
+  white-space: nowrap;
+}
+
+.table th.right,
+.table td.right {
+  text-align: right;
+}
+
+.table td {
+  padding: 0 14px;
+  height: 44px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.table tr:last-child td {
+  border-bottom: 0;
+}
+
+.table tbody tr {
+  transition: background-color 120ms;
+}
+
+.table tbody tr:hover {
+  background: #181B26;
+}
+
+.table tbody tr.clickable {
+  cursor: pointer;
+}
+
+.table tbody tr.selected {
+  background: #132238;
+}
+
+/* First column primary identifier */
+.table td:first-child {
+  font-weight: 500;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.footerCount {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.footerActions {
+  display: flex;
+  gap: 8px;
+}
+
+.emptyRow td {
+  height: 80px;
+  text-align: left;
+  color: var(--text-muted);
+}
