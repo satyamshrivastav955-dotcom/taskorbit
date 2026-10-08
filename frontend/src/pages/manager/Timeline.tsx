@@ -1,16 +1,98 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Calendar, Filter, AlertTriangle, ArrowRight, Clock } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { AlertTriangle, ArrowUpRight, CalendarDays, CheckCircle2, Clock3, Filter, RefreshCw, Search, SlidersHorizontal } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { AppLayout, PageContainer } from '../../components/layout/AppLayout';
-import { ProgressBar } from '../../components/ui/ProgressBar';
 import { Avatar } from '../../components/ui/Avatar';
+import { PriorityBadge } from '../../components/ui/PriorityBadge';
+import { Skeleton } from '../../components/ui/State';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { dataStore } from '../../services/dataService';
-import type { Task } from '../../types';
+import type { Project, Task, TaskStatus, UserProfile } from '../../types';
+import styles from './Timeline.module.css';
 
-function dayPercent(value: string, start: number, total: number): number {
-  const time = new Date(value).getTime();
-  return Math.max(0, Math.min(100, ((time - start) / total) * 100));
+type TimelineFilter = 'all' | 'active' | 'attention' | 'completed';
+
+interface DateRange {
+  start: number;
+  end: number;
+  total: number;
+}
+
+interface DateTick {
+  label: string;
+  position: number;
+}
+
+function dateValue(value: string): number {
+  const parsed = new Date(`${value}T00:00:00`).getTime();
+  return Number.isNaN(parsed) ? Date.now() : parsed;
+}
+
+function formatDate(value: string | number): string {
+  return new Intl.DateTimeFormat('en-IN', { month: 'short', day: 'numeric' }).format(typeof value === 'number' ? new Date(value) : new Date(`${value}T00:00:00`));
+}
+
+function formatRange(start: string, end: string): string {
+  return `${formatDate(start)} – ${formatDate(end)}`;
+}
+
+function dayCount(start: number, end: number): number {
+  return Math.max(1, Math.round((end - start) / 86400000));
+}
+
+function timelineRange(project: Project | undefined, tasks: Task[]): DateRange {
+  const values = project === undefined
+    ? tasks.flatMap((task) => [dateValue(task.startDate), dateValue(task.deadline)])
+    : [dateValue(project.startDate), dateValue(project.deadline), ...tasks.flatMap((task) => [dateValue(task.startDate), dateValue(task.deadline)])];
+  const start = Math.min(...values, Date.now()) - 86400000;
+  const end = Math.max(...values, start + 86400000) + 86400000;
+  return { start, end, total: Math.max(1, end - start) };
+}
+
+function position(value: string, range: DateRange): number {
+  return Math.max(0, Math.min(100, ((dateValue(value) - range.start) / range.total) * 100));
+}
+
+function dateTicks(range: DateRange): DateTick[] {
+  const days = dayCount(range.start, range.end);
+  const count = Math.min(8, Math.max(4, Math.ceil(days / 7)));
+  return Array.from({ length: count + 1 }, (_, index) => ({
+    label: formatDate(range.start + (range.total * index) / count),
+    position: (index / count) * 100,
+  }));
+}
+
+function isOverdue(task: Task): boolean {
+  return task.status !== 'approved' && dateValue(task.deadline) < new Date(new Date().toDateString()).getTime();
+}
+
+function isDueSoon(task: Task): boolean {
+  if (task.status === 'approved') return false;
+  const days = Math.ceil((dateValue(task.deadline) - Date.now()) / 86400000);
+  return days >= 0 && days <= 7;
+}
+
+function statusClass(status: TaskStatus): string {
+  const classes: Record<TaskStatus, string> = {
+    todo: styles.statusTodo,
+    in_progress: styles.statusProgress,
+    submitted: styles.statusSubmitted,
+    in_review: styles.statusReview,
+    revision: styles.statusRevision,
+    approved: styles.statusApproved,
+  };
+  return classes[status];
+}
+
+function taskOwner(task: Task, users: UserProfile[]): UserProfile | undefined {
+  return users.find((user) => user.uid === task.assigneeId);
+}
+
+function taskFilter(task: Task, filter: TimelineFilter, conflictIds: Set<string>): boolean {
+  if (filter === 'completed') return task.status === 'approved';
+  if (filter === 'active') return task.status !== 'approved';
+  if (filter === 'attention') return isOverdue(task) || task.status === 'revision' || conflictIds.has(task.id);
+  return true;
 }
 
 export function ManagerTimeline(): JSX.Element {
@@ -18,25 +100,134 @@ export function ManagerTimeline(): JSX.Element {
   const [, setTick] = useState(0);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedTaskId, setSelectedTaskId] = useState('');
-  useEffect(() => dataStore.subscribe(() => setTick((t) => t + 1)), []);
+  const [filter, setFilter] = useState<TimelineFilter>('all');
+  const [search, setSearch] = useState('');
+
+  useEffect(() => dataStore.subscribe(() => setTick((value) => value + 1)), []);
+
   const projects = dataStore.getProjects();
   const tasks = dataStore.getTasks();
   const users = dataStore.getUsers();
   const conflicts = dataStore.getConflicts();
+  const loading = dataStore.isLoading();
+  const error = dataStore.getError();
   const project = projects.find((item) => item.id === selectedProjectId) ?? projects[0];
-  const projectTasks = project ? tasks.filter((task) => task.projectId === project.id) : [];
-  const activeTask = projectTasks.find((task) => task.id === selectedTaskId) ?? projectTasks[0];
-  const range = useMemo(() => {
-    const start = project ? new Date(project.startDate).getTime() : Date.now();
-    const end = project ? new Date(project.deadline).getTime() : start + 86400000;
-    return { start, total: Math.max(86400000, end - start) };
-  }, [project]);
-  const groups = [...new Set(projectTasks.map((task) => task.assigneeId))].map((assigneeId) => ({ assigneeId, tasks: projectTasks.filter((task) => task.assigneeId === assigneeId) }));
-  const overdue = (task: Task): boolean => task.status !== 'approved' && new Date(task.deadline).getTime() < Date.now();
+  const projectTasks = useMemo(() => tasks.filter((task) => task.projectId === project?.id), [project?.id, tasks]);
+  const conflictIds = useMemo(() => new Set(conflicts.flatMap((conflict) => [conflict.taskA.id, conflict.taskB.id])), [conflicts]);
+  const visibleTasks = useMemo(() => projectTasks.filter((task) => task.title.toLowerCase().includes(search.trim().toLowerCase()) && taskFilter(task, filter, conflictIds)), [projectTasks, search, filter, conflictIds]);
+  const range = useMemo(() => timelineRange(project, projectTasks), [project, projectTasks]);
+  const ticks = useMemo(() => dateTicks(range), [range]);
+  const activeTask = projectTasks.find((task) => task.id === selectedTaskId) ?? visibleTasks[0];
+  const groups = useMemo(() => {
+    const grouped = new Map<string, Task[]>();
+    visibleTasks.forEach((task) => grouped.set(task.assigneeId || 'unassigned', [...(grouped.get(task.assigneeId || 'unassigned') ?? []), task]));
+    return [...grouped.entries()];
+  }, [visibleTasks]);
 
-  return <AppLayout role="manager" conflictCount={conflicts.length}><PageContainer>
-    <div style={{ marginBottom: '8px' }}><h1 style={{ fontSize: '26px', fontWeight: 700 }}>Timeline</h1><p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>A live schedule built from project task dates and assignments.</p></div>
-    <div style={{ background: '#FFF', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}><div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><select value={project?.id ?? ''} onChange={(e) => { setSelectedProjectId(e.target.value); setSelectedTaskId(''); }} style={{ padding: '7px 12px', border: '1px solid var(--border)', borderRadius: '8px', background: '#F8FAFC', fontWeight: 600, fontSize: '13px' }}><option value="">Select project</option>{projects.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select>{project && <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', color: 'var(--text-secondary)' }}><Calendar size={14} /> {project.startDate} – {project.deadline}</span>}</div><span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12.5px', color: conflicts.length > 0 ? '#B91C1C' : 'var(--text-secondary)' }}><Filter size={14} /> {conflicts.length} active conflicts</span></div>
-    {!project ? <div style={{ background: '#FFF', border: '1px solid var(--border)', borderRadius: '14px', textAlign: 'center', padding: '72px 20px' }}><Calendar size={42} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} /><p style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>No project timelines yet</p><p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '5px' }}>Create a project and assign tasks to see its delivery schedule.</p></div> : <div className="responsive-grid" style={{ gridTemplateColumns: 'minmax(0, 2fr) minmax(280px, 1fr)', gap: '20px', alignItems: 'start' }}><section style={{ background: '#FFF', border: '1px solid var(--border)', borderRadius: '14px', padding: '20px', overflowX: 'auto' }}><div style={{ display: 'grid', gridTemplateColumns: '210px 1fr', gap: '12px', borderBottom: '1px solid var(--border)', paddingBottom: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}><strong>Assignee / task</strong><div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{project.startDate}</span><span>{project.deadline}</span></div></div><div style={{ display: 'flex', flexDirection: 'column', gap: '18px', marginTop: '18px' }}>{groups.length === 0 ? <p style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>No tasks assigned to this project.</p> : groups.map(({ assigneeId, tasks: grouped }) => { const assignee = users.find((user) => user.uid === assigneeId); return <div key={assigneeId}><div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, marginBottom: '8px' }}><Avatar name={assignee?.name ?? 'Assignee'} size="sm" />{assignee?.name ?? 'Assignee'}<span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>({grouped.length} tasks)</span></div><div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>{grouped.map((task) => { const left = dayPercent(task.startDate, range.start, range.total); const right = dayPercent(task.deadline, range.start, range.total); return <button key={task.id} onClick={() => setSelectedTaskId(task.id)} style={{ display: 'grid', gridTemplateColumns: '210px 1fr', gap: '12px', alignItems: 'center', textAlign: 'left', background: 'transparent', border: 0, padding: 0, cursor: 'pointer' }}><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12.5px', color: 'var(--text-secondary)' }}>{task.title}</span><span style={{ position: 'relative', height: '25px', borderRadius: '6px', background: '#F8FAFC', display: 'block' }}><span style={{ position: 'absolute', left: `${left}%`, width: `${Math.max(2, right - left)}%`, top: '3px', height: '19px', borderRadius: '5px', background: task.status === 'approved' ? '#34D399' : task.status === 'revision' ? '#F59E0B' : '#818CF8', color: '#FFF', fontSize: '10px', fontWeight: 700, padding: '0 7px', display: 'flex', alignItems: 'center', overflow: 'hidden', whiteSpace: 'nowrap', outline: task.conflictWith.length > 0 ? '2px solid #EF4444' : 'none' }}>{task.status.replace('_', ' ')}</span></span></button>; })}</div></div>; })}</div></section><aside style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}><section style={{ background: '#FFF', border: '1px solid var(--border)', borderRadius: '14px', padding: '20px' }}><h2 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '12px' }}>Project progress</h2><div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}><strong style={{ fontSize: '25px' }}>{project.progress}%</strong><span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{project.tasksCompleted ?? 0} / {project.totalTasks ?? 0} approved</span></div><ProgressBar value={project.progress} height={8} /></section>{activeTask && <section style={{ background: '#FFF', border: '1px solid var(--border)', borderRadius: '14px', padding: '20px' }}><div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}><h2 style={{ fontSize: '15px', fontWeight: 700 }}>{activeTask.title}</h2>{activeTask.conflictWith.length > 0 && <AlertTriangle size={17} color="#EF4444" />}</div><div style={{ display: 'flex', flexDirection: 'column', gap: '11px', marginTop: '14px', fontSize: '12.5px' }}><div><span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Status</span><StatusBadge status={activeTask.status} size="sm" /></div><div><span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Dates</span><span>{activeTask.startDate} – {activeTask.deadline}</span></div><div><span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Health</span><span style={{ color: overdue(activeTask) ? '#B91C1C' : 'var(--text-secondary)' }}>{overdue(activeTask) ? 'Overdue' : 'On schedule'}</span></div></div><button onClick={() => navigate(`/manager/tasks/${activeTask.id}`)} style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '18px', color: 'var(--primary)', fontSize: '13px', fontWeight: 600 }}>View task <ArrowRight size={14} /></button></section>}</aside></div>}
-  </PageContainer></AppLayout>;
+  const summary = useMemo(() => ({
+    total: projectTasks.length,
+    complete: projectTasks.filter((task) => task.status === 'approved').length,
+    active: projectTasks.filter((task) => task.status !== 'approved').length,
+    dueSoon: projectTasks.filter(isDueSoon).length,
+    conflicts: projectTasks.filter((task) => conflictIds.has(task.id)).length,
+  }), [projectTasks, conflictIds]);
+
+  function selectProject(id: string): void {
+    setSelectedProjectId(id);
+    setSelectedTaskId('');
+    setSearch('');
+    setFilter('all');
+  }
+
+  return (
+    <AppLayout role="manager" conflictCount={conflicts.length}>
+      <PageContainer>
+        <div className={styles.header}>
+          <div>
+            <div className={styles.eyebrow}><span className={styles.eyebrowDot} /> Delivery control room</div>
+            <h1 className={styles.title}>Timeline</h1>
+            <p className={styles.subtitle}>See ownership, dates, and delivery pressure across a project before it becomes a blocker.</p>
+          </div>
+          <div className={styles.headerActions}>
+            <button type="button" className={styles.refreshButton} onClick={() => { void dataStore.refresh(); }}><RefreshCw size={15} /> Refresh data</button>
+            <Link className={styles.primaryAction} to="/manager/conflicts"><AlertTriangle size={15} /> Review conflicts{conflicts.length > 0 ? ` (${conflicts.length})` : ''}</Link>
+          </div>
+        </div>
+
+        <div className={styles.summaryStrip} aria-label="Timeline summary">
+          <div><span>Total tasks</span><strong>{loading && tasks.length === 0 ? '—' : summary.total}</strong><small>In this project</small></div>
+          <div><span>Active work</span><strong>{summary.active}</strong><small>Not yet approved</small></div>
+          <div><span>Due this week</span><strong className={summary.dueSoon > 0 ? styles.warningValue : ''}>{summary.dueSoon}</strong><small>Needs a close look</small></div>
+          <div><span>Schedule signals</span><strong className={summary.conflicts > 0 ? styles.dangerValue : styles.goodValue}>{summary.conflicts}</strong><small>{summary.conflicts > 0 ? 'Conflicts in view' : 'No overlap in view'}</small></div>
+        </div>
+
+        <div className={styles.controlBar}>
+          <div className={styles.projectControl}>
+            <label htmlFor="timeline-project"><span>PROJECT</span><select id="timeline-project" value={project?.id ?? ''} onChange={(event) => selectProject(event.target.value)}><option value="">Select a project</option>{projects.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+            {project ? <span className={styles.projectDates}><CalendarDays size={15} /> {formatRange(project.startDate, project.deadline)}</span> : null}
+          </div>
+          <div className={styles.filters}>
+            <label className={styles.searchBox}><Search size={15} /><input aria-label="Search timeline tasks" placeholder="Search tasks" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+            <div className={styles.filterGroup} role="group" aria-label="Filter timeline tasks">
+              {(['all', 'active', 'attention', 'completed'] as TimelineFilter[]).map((item) => <button type="button" key={item} className={filter === item ? styles.filterActive : ''} onClick={() => setFilter(item)}><Filter size={13} /> {item === 'all' ? 'All' : item === 'active' ? 'Active' : item === 'attention' ? 'Attention' : 'Completed'}</button>)}
+            </div>
+          </div>
+        </div>
+
+        {error !== '' && <div className={styles.errorState} role="alert"><AlertTriangle size={17} /><span>{error}</span><button type="button" onClick={() => { void dataStore.refresh(); }}>Try again</button></div>}
+
+        {!project && loading ? <section className={styles.loadingCard} aria-label="Loading timeline"><Skeleton rows={5} /></section> : !project ? <section className={styles.emptyState}><CalendarDays size={25} /><strong>No project timelines yet</strong><p>Projects with assigned tasks will appear here automatically.</p><Link to="/manager/projects">Open projects <ArrowUpRight size={14} /></Link></section> : (
+          <div className={styles.timelineLayout}>
+            <section className={styles.timelineCard} aria-label={`${project.title} timeline`}>
+              <div className={styles.timelineCardHeader}><div><span className={styles.cardKicker}>PROJECT DELIVERY</span><h2>{project.title}</h2><p>{project.clientName || 'Client project'} · {project.progress}% complete</p></div><StatusBadge status={project.status} size="sm" /></div>
+              <div className={styles.timelineScroll}>
+                <div className={styles.timelineCanvas}>
+                  <div className={styles.timelineHeader}>
+                    <div className={styles.taskColumnLabel}>ASSIGNEE / TASK</div>
+                    <div className={styles.dateScale}>{ticks.map((tick) => <span key={`${tick.position}-${tick.label}`} style={{ left: `${tick.position}%` }}>{tick.label}</span>)}</div>
+                  </div>
+                  <div className={styles.timelineRows}>
+                    {ticks.map((tick) => <span className={styles.gridLine} key={`line-${tick.position}`} style={{ left: `calc(230px + (100% - 230px) * ${tick.position / 100})` }} />)}
+                    {position(new Date().toISOString().slice(0, 10), range) > 0 && position(new Date().toISOString().slice(0, 10), range) < 100 ? <span className={styles.todayLine} style={{ left: `calc(230px + (100% - 230px) * ${position(new Date().toISOString().slice(0, 10), range) / 100})` }}><b>Today</b></span> : null}
+                    {groups.length === 0 ? <div className={styles.noMatches}><SlidersHorizontal size={18} /><strong>No tasks match this view</strong><span>Clear the search or choose another timeline filter.</span><button type="button" onClick={() => { setFilter('all'); setSearch(''); }}>Reset view</button></div> : groups.map(([assigneeId, groupedTasks]) => {
+                      const assignee = users.find((user) => user.uid === assigneeId);
+                      return <div className={styles.assigneeGroup} key={assigneeId}>
+                        <div className={styles.assigneeLabel}><Avatar name={assignee?.name ?? 'Unassigned'} size="sm" /><span><strong>{assignee?.name ?? 'Unassigned'}</strong><small>{groupedTasks.length} {groupedTasks.length === 1 ? 'task' : 'tasks'}</small></span></div>
+                        <div className={styles.assigneeTasks}>{groupedTasks.map((task) => {
+                          const left = position(task.startDate, range);
+                          const right = position(task.deadline, range);
+                          const width = Math.max(2.8, right - left);
+                          const owner = taskOwner(task, users);
+                          const barStyle = { left: `${left}%`, width: `${width}%`, '--bar-delay': `${Math.min(groupedTasks.indexOf(task) * 70, 280)}ms` } as CSSProperties;
+                          return <button type="button" className={`${styles.taskTimelineRow} ${activeTask?.id === task.id ? styles.taskSelected : ''}`} key={task.id} onClick={() => setSelectedTaskId(task.id)}>
+                            <span className={styles.taskLabel}><strong>{task.title}</strong><small>{owner?.name ?? 'Unassigned'} · {formatDate(task.deadline)}</small></span>
+                            <span className={`${styles.taskTrack} ${isOverdue(task) ? styles.trackOverdue : ''}`}><span className={`${styles.taskBar} ${statusClass(task.status)}`} style={barStyle}><i />{task.status === 'approved' ? 'Complete' : isOverdue(task) ? 'Overdue' : task.status === 'revision' ? 'Revision' : task.status === 'in_review' ? 'Review' : 'In motion'}</span></span>
+                            {conflictIds.has(task.id) ? <AlertTriangle className={styles.taskWarning} size={14} aria-label="Schedule conflict" /> : null}
+                          </button>;
+                        })}</div>
+                      </div>;
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div className={styles.timelineLegend}><span><i className={styles.legendBlue} />In progress</span><span><i className={styles.legendTeal} />In review</span><span><i className={styles.legendAmber} />Revision</span><span><i className={styles.legendGreen} />Approved</span><span><i className={styles.legendToday} />Today</span></div>
+            </section>
+
+            <aside className={styles.detailPanel} aria-live="polite">
+              {activeTask ? <>
+                <div className={styles.detailKicker}><span>SELECTED TASK</span>{conflictIds.has(activeTask.id) ? <span className={styles.conflictPill}><AlertTriangle size={12} /> Conflict</span> : null}</div>
+                <h2>{activeTask.title}</h2>
+                <p className={styles.detailProject}>{activeTask.projectName || project.title}</p>
+                <div className={styles.detailStatus}><StatusBadge status={activeTask.status} size="sm" /><PriorityBadge priority={activeTask.priority} size="sm" /></div>
+                <div className={styles.detailDates}><div><span>START</span><strong>{formatDate(activeTask.startDate)}</strong></div><div><span>DUE</span><strong className={isOverdue(activeTask) ? styles.dangerText : ''}>{formatDate(activeTask.deadline)}</strong></div></div>
+                <div className={styles.detailPeople}><div><span>ASSIGNEE</span><div><Avatar name={taskOwner(activeTask, users)?.name ?? 'Unassigned'} size="sm" /><strong>{taskOwner(activeTask, users)?.name ?? 'Unassigned'}</strong></div></div><div><span>REVIEWER</span><div><Avatar name={users.find((user) => user.uid === activeTask.reviewerId)?.name ?? 'Unassigned'} size="sm" /><strong>{users.find((user) => user.uid === activeTask.reviewerId)?.name ?? 'Unassigned'}</strong></div></div></div>
+                <div className={styles.detailDescription}>{activeTask.description || 'No task description has been added yet.'}</div>
+                <Link className={styles.openTask} to={`/manager/tasks/${activeTask.id}`}>Open task details <ArrowUpRight size={15} /></Link>
+              </> : <div className={styles.detailEmpty}><Clock3 size={21} /><strong>Select a task</strong><span>Choose a bar to inspect dates, ownership, and delivery status.</span></div>}
+            </aside>
+          </div>
+        )}
+      </PageContainer>
+    </AppLayout>
+  );
 }
