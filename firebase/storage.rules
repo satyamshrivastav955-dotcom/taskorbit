@@ -1,16 +1,23 @@
+rules_version = '2';
 service firebase.storage {
-  match /b/{bucket}/o {
-    match /projects/{projectId}/requirements/{file} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.role == 'client';
-    }
-    match /projects/{projectId}/submissions/{taskId}/{file} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.role == 'assignee';
-    }
-    match /projects/{projectId}/final/{file} {
-      allow read: if request.auth != null;
-      allow write: if false;
-    }
+ match /b/{bucket}/o {
+  function signedIn() { return request.auth != null; }
+  function project(id) { return firestore.get(/databases/(default)/documents/projects/$(id)).data; }
+  function task(id) { return firestore.get(/databases/(default)/documents/tasks/$(id)).data; }
+  function readProject(id) { let p=project(id); return signedIn() && (request.auth.token.role=='manager' || p.clientId==request.auth.uid || request.auth.uid in p.memberIds); }
+  function validUpload() {
+   return resource == null && request.resource != null && request.resource.size > 0 && request.resource.size <= 50*1024*1024
+    && request.resource.metadata.ownerId == request.auth.uid
+    && request.resource.contentType.matches('(application/(pdf|zip|x-zip-compressed|octet-stream|json|msword|vnd[.].*)|text/(plain|csv|markdown)|image/(png|jpeg|webp|gif))');
   }
+  match /projects/{projectId}/requirements/{file} {
+   allow read: if readProject(projectId);
+   allow create: if signedIn() && request.auth.token.role=='client' && project(projectId).clientId==request.auth.uid && validUpload();
+  }
+  match /projects/{projectId}/submissions/{taskId}/{file} {
+   allow read: if signedIn() && task(taskId).projectId==projectId && (request.auth.token.role=='manager' || task(taskId).assigneeId==request.auth.uid || task(taskId).reviewerId==request.auth.uid);
+   allow create: if signedIn() && request.auth.token.role=='assignee' && task(taskId).projectId==projectId
+    && task(taskId).assigneeId==request.auth.uid && task(taskId).status=='in_progress' && validUpload();
+  }
+ }
 }

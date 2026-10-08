@@ -1,63 +1,44 @@
 rules_version = '2';
 service cloud.firestore {
-  match /databases/{database}/documents {
-    function role() { return request.auth.token.role; }
-    function signedIn() { return request.auth != null; }
-
-    match /users/{uid} {
-      allow read: if signedIn() && (request.auth.uid == uid || role() == 'manager');
-      allow write: if false;
-    }
-    match /projects/{id} {
-      allow create: if signedIn() && role() == 'client';
-      allow read: if signedIn() && (
-        role() == 'manager' ||
-        (role() == 'client' && resource.data.clientId == request.auth.uid) ||
-        role() in ['assignee', 'reviewer']
-      );
-      allow update: if signedIn() && role() == 'client'
-        && resource.data.clientId == request.auth.uid
-        && resource.data.status == 'draft';
-      allow delete: if false;
-    }
-    match /requirements/{id} {
-      allow read: if signedIn();
-      allow create: if signedIn() && role() == 'client';
-      allow update, delete: if false;
-    }
-    match /tasks/{id} {
-      allow read: if signedIn() && (
-        role() == 'manager' ||
-        (role() == 'client') ||
-        (role() == 'assignee' && resource.data.assigneeId == request.auth.uid) ||
-        (role() == 'reviewer' && resource.data.reviewerId == request.auth.uid)
-      );
-      // Tasks written only through the backend. Deny direct client writes
-      // to conflictWith and status.
-      allow create, update, delete: if false;
-    }
-    match /submissions/{id} {
-      allow read: if signedIn();
-      allow create: if signedIn() && role() == 'assignee';
-      allow update, delete: if false;
-    }
-    match /reviews/{id} {
-      allow read: if signedIn();
-      allow create, update, delete: if false;
-    }
-    match /notifications/{uid} {
-      allow read: if signedIn();
-      allow update: if signedIn();
-      allow create, delete: if false;
-    }
-    match /notifications/{id} {
-      allow read: if signedIn();
-      allow update: if signedIn();
-      allow create, delete: if false;
-    }
-    match /activityLogs/{id} {
-      allow read: if signedIn();
-      allow create, update, delete: if false;
-    }
+ match /databases/{database}/documents {
+  function signedIn() { return request.auth != null; }
+  function role() { return request.auth.token.role; }
+  function manager() { return signedIn() && role() == 'manager'; }
+  function projectAccess(id) {
+   let p = get(/databases/$(database)/documents/projects/$(id)).data;
+   return signedIn() && (role() == 'manager' || p.clientId == request.auth.uid || request.auth.uid in p.memberIds);
   }
+  function taskAccess(id) {
+   let t = get(/databases/$(database)/documents/tasks/$(id)).data;
+   return signedIn() && (role() == 'manager' || (role() == 'assignee' && t.assigneeId == request.auth.uid) || (role() == 'reviewer' && t.reviewerId == request.auth.uid));
+  }
+  match /users/{uid} {
+   allow read: if signedIn() && (uid == request.auth.uid || role() == 'manager');
+   allow update: if signedIn() && uid == request.auth.uid
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','phone','department','bio','jobTitle','updatedAt'])
+    && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 120;
+  }
+  match /userSettings/{uid} {
+   allow read: if signedIn() && uid == request.auth.uid;
+   allow create, update: if signedIn() && uid == request.auth.uid
+    && request.resource.data.keys().hasOnly(['timezone','dateFormat','compactMode','emailDigests','reviewAlerts','conflictAlerts','updatedAt']);
+  }
+  match /projects/{id} {
+   allow read: if projectAccess(id);
+   match /documents/{file} { allow read: if projectAccess(id); }
+  }
+  match /requirements/{id} { allow read: if projectAccess(resource.data.projectId); }
+  match /tasks/{id} { allow read: if taskAccess(id); }
+  match /submissions/{id} { allow read: if taskAccess(resource.data.taskId); }
+  match /reviews/{id} { allow read: if taskAccess(resource.data.taskId); }
+  match /feedback/{id} { allow read: if manager() || (signedIn() && resource.data.clientId == request.auth.uid); }
+  match /notifications/{id} {
+   allow read: if signedIn() && resource.data.userId == request.auth.uid;
+   allow update: if signedIn() && resource.data.userId == request.auth.uid
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) && request.resource.data.read is bool;
+  }
+  match /activityLogs/{id} { allow read: if manager() || (signedIn() && request.auth.uid in resource.data.audienceIds); }
+  // All domain mutations go through authenticated Express handlers.
+  match /{document=**} { allow write: if false; }
+ }
 }
