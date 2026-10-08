@@ -1,0 +1,5 @@
+.warn { display: flex; align-items: center; gap: 8px; color: var(--red-500); font-weight: 600; font-size: 14px; }
+.details { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; font-size: 13px; margin: 12px 0; }
+.details p { margin: 4px 0; }
+.row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 12px; }
+.row > div:first-child { flex: 1; }

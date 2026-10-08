@@ -86,12 +86,12 @@ export function Timeline({
           {Array.from(rows.entries()).map(([assigneeId, list]) => {
             const name = names[assigneeId] ?? assigneeId.slice(0, 8);
             return [
-              <div key={`${assigneeId}-label`} className={styles.assigneeLabel}>
+              <div key={`${assigneeId}-label`} className={styles.assigneeLabel} style={{ height: Math.max(48, list.length * 32 + 16) }}>
                 <span className={styles.assigneeInitials}>{initials(name)}</span>
                 {name}
               </div>,
-              <div key={`${assigneeId}-lane`} className={styles.lane}>
-                {list.map((t) => {
+              <div key={`${assigneeId}-lane`} className={styles.lane} style={{ height: Math.max(48, list.length * 32 + 16) }}>
+                {list.map((t, index) => {
                   const s = Math.max(
                     0,
                     Math.floor((new Date(t.startDate).getTime() - days[0].getTime()) / 86400000),
@@ -111,6 +111,7 @@ export function Timeline({
                       className={`${styles.bar} ${isConflict ? styles.barConflict : ''}`}
                       style={{
                         left: `${leftPct}%`,
+                        top: `${8 + index * 32}px`,
                         width: `${widthPct}%`,
                         background: barColor(t.status),
                       }}
@@ -118,7 +119,7 @@ export function Timeline({
                       role="button"
                       tabIndex={0}
                       aria-label={`${t.title}, ${t.status}`}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onTaskClick?.(t); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTaskClick?.(t); } }}
                     >
                       <span className={styles.barLabel}>{t.title}</span>
                     </div>

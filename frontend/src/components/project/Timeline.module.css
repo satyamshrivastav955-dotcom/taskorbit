@@ -11,7 +11,8 @@
   gap: 12px;
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
-  background: #14161F;
+  background: var(--surface-muted);
+  flex-wrap: wrap;
 }
 
 .toolbarRange {
@@ -37,7 +38,7 @@
 .labelHeader {
   width: 200px;
   height: 36px;
-  background: #14161F;
+  background: var(--surface-muted);
   border-bottom: 1px solid var(--border);
   border-right: 1px solid var(--border);
   flex-shrink: 0;
@@ -45,7 +46,7 @@
 
 .dayHeader {
   height: 36px;
-  background: #14161F;
+  background: var(--surface-muted);
   border-bottom: 1px solid var(--border);
   border-right: 1px solid var(--border);
   display: flex;
@@ -58,7 +59,7 @@
 }
 
 .dayHeader.weekend {
-  background: #10121A;
+  background: var(--bg-neutral-subtle);
   color: var(--slate-600);
 }
 
@@ -102,7 +103,7 @@
   border-radius: 50%;
   background: var(--surface-pill);
   border: 1px solid var(--border);
-  color: #fff;
+  color: var(--primary);
   font-size: 11px;
   font-weight: 600;
   display: inline-flex;
@@ -129,7 +130,8 @@
   padding: 0 6px;
   overflow: hidden;
   cursor: pointer;
-  transition: opacity 120ms;
+  transition: opacity 150ms, width var(--transition-slow), left var(--transition-slow);
+  animation: fadeUp 260ms ease both;
 }
 
 .bar:hover {
