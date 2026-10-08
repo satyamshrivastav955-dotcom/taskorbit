@@ -9,6 +9,7 @@ import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import type { Role } from '../../types';
 import styles from './Login.module.css';
+import { AuthVisual } from './AuthVisual';
 
 const base = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:4000/api';
 
@@ -74,6 +75,7 @@ export function Register(): JSX.Element {
 
   return (
     <div className={styles.shell}>
+      <AuthVisual />
       <main className={styles.main}>
         <div className={styles.card}>
           <div className={styles.cardBrand}><span className={styles.orbitMark} />TaskOrbit</div>
