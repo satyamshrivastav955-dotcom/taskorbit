@@ -1,19 +1,16 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { addDoc, collection } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../../services/firebase';
-import { useAppSelector } from '../../redux/hooks';
+import { Link, useNavigate } from 'react-router-dom';
 import { AppLayout, PageContainer } from '../../components/layout/AppLayout';
 import { Input } from '../../components/ui/Input';
 import { TextArea } from '../../components/ui/TextArea';
 import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
+import { dataStore } from '../../services/dataService';
+import { uploadFiles } from '../../services/uploads';
 import type { Priority } from '../../types';
 
 export function NewProject(): JSX.Element {
   const nav = useNavigate();
-  const uid = useAppSelector((s) => s.session.uid);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
@@ -24,34 +21,45 @@ export function NewProject(): JSX.Element {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  const [savedProjectId, setSavedProjectId] = useState('');
 
   async function onSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
+    if (savedProjectId !== '') { nav(`/client/projects/${savedProjectId}`); return; }
     if (title.trim() === '' || startDate === '' || deadline === '') { setError('Title, start date and deadline are required.'); return; }
     if (new Date(deadline) < new Date(startDate)) { setError('Deadline must be on or after start date.'); return; }
     setPending(true);
     setError('');
     try {
-      const proj = await addDoc(collection(db, 'projects'), {
-        title, description, clientId: uid, managerId: null,
-        status: 'draft', priority, startDate: new Date(startDate), deadline: new Date(deadline), createdAt: new Date(),
+      const project = await dataStore.createProject({
+        title,
+        description,
+        priority,
+        startDate,
+        deadline,
       });
-      let fileUrls: string[] = [];
-      if (file !== null) {
-        const r = ref(storage, `projects/${proj.id}/requirements/${Date.now()}-${file.name}`);
-        await uploadBytes(r, file);
-        fileUrls = [await getDownloadURL(r)];
-      }
+      setSavedProjectId(project.id);
+      const uploaded = file === null ? [] : await uploadFiles(
+        [file],
+        dataStore.getActiveUser().uid,
+        `projects/${project.id}/requirements/`,
+      );
       if (reqTitle.trim() !== '') {
-        await addDoc(collection(db, 'requirements'), {
-          projectId: proj.id, title: reqTitle, details: reqDetails, fileUrls, createdAt: new Date(),
+        await dataStore.addRequirement({
+          projectId: project.id,
+          title: reqTitle,
+          details: reqDetails,
+          files: uploaded.map(({ name, storagePath }) => ({ name, storagePath })),
+        });
+      } else if (uploaded.length > 0) {
+        await dataStore.addRequirement({
+          projectId: project.id,
+          title: 'Project attachments',
+          details: reqDetails,
+          files: uploaded.map(({ name, storagePath }) => ({ name, storagePath })),
         });
       }
-      await addDoc(collection(db, 'activityLogs'), {
-        projectId: proj.id, actorId: uid, actorName: 'Client',
-        action: 'created project', targetType: 'project', targetId: proj.id, createdAt: new Date(),
-      });
-      nav(`/client/${proj.id}`);
+      nav(`/client/projects/${project.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create project');
     } finally {
@@ -75,7 +83,7 @@ export function NewProject(): JSX.Element {
           <TextArea label="Details" value={reqDetails} onChange={(e) => setReqDetails(e.target.value)} />
           <Input label="Attach file" type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
           {error !== '' ? <p style={{ color: 'var(--red-500)' }}>{error}</p> : null}
-          <Button type="submit" pending={pending}>Create project</Button>
+          {savedProjectId !== '' && error !== '' ? <p>Your project is already saved. <Link to={`/client/projects/${savedProjectId}`}>Open the project</Link> to add the remaining requirements or files.</p> : <Button type="submit" pending={pending}>Create project</Button>}
         </form>
       </PageContainer>
     </AppLayout>
