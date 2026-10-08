@@ -16,10 +16,10 @@ export function StatCard({
   label,
   value,
   change,
-  trend = 'up',
+  trend = 'neutral',
   color = 'purple',
   icon,
-  sparkline = true,
+  sparkline = false,
 }: StatCardProps): JSX.Element {
   return (
     <div className={styles.card}>
@@ -34,7 +34,7 @@ export function StatCard({
         <div className={styles.footer}>
           {change && (
             <div className={`${styles.trend} ${styles[trend]}`}>
-              {trend === 'up' ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+              {trend === 'up' ? <TrendingUp size={13} aria-hidden="true" /> : trend === 'down' ? <TrendingDown size={13} aria-hidden="true" /> : null}
               <span>{change}</span>
             </div>
           )}

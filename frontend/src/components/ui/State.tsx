@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './State.module.css';
+import { AlertCircle, Inbox, RotateCcw } from 'lucide-react';
 import { Button } from './Button';
 
 /** Skeleton rows matching table row height (44px) */
@@ -9,6 +10,7 @@ export function Skeleton({ rows = 5 }: { rows?: number }): JSX.Element {
       className={styles.skelWrap}
       aria-busy="true"
       aria-label="Loading"
+      role="status"
     >
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className={styles.skelRow}>
@@ -34,6 +36,7 @@ export function EmptyState({
 }): JSX.Element {
   return (
     <div className={styles.empty}>
+      <Inbox className={styles.stateIcon} size={26} aria-hidden="true" />
       <p className={styles.emptyText}>{text}</p>
       {hint !== undefined && hint !== '' ? (
         <p className={styles.emptyHint}>{hint}</p>
@@ -54,13 +57,14 @@ export function ErrorState({
   onRetry: () => void;
 }): JSX.Element {
   return (
-    <div className={styles.empty}>
+    <div className={styles.empty} role="alert">
+      <AlertCircle className={`${styles.stateIcon} ${styles.stateIconError}`} size={26} aria-hidden="true" />
       <p className={styles.emptyText}>{message}</p>
       {reason !== undefined && reason !== '' ? (
         <p className={styles.emptyHint}>{reason}</p>
       ) : null}
       <div className={styles.emptyAction}>
-        <Button variant="secondary" onClick={onRetry}>Retry</Button>
+        <Button variant="secondary" onClick={onRetry}><RotateCcw size={14} aria-hidden="true" /> Retry</Button>
       </div>
     </div>
   );

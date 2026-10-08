@@ -1,62 +1,10 @@
-.portal {
-  position: fixed;
-  bottom: 80px; /* above floating bar */
-  right: 24px;
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  pointer-events: none;
-}
-
-.toast {
-  width: 320px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  display: flex;
-  align-items: stretch;
-  overflow: hidden;
-  pointer-events: all;
-  animation: slideIn 150ms ease;
-  box-shadow: 0 4px 20px rgba(0,0,0,.5);
-}
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateX(16px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-.bar { width: 3px; flex-shrink: 0; }
-.bar.success { background: var(--green-500); }
-.bar.error   { background: var(--red-500); }
-.bar.info    { background: var(--blue-600); }
-
-.content {
-  flex: 1;
-  padding: 10px 12px;
-  min-width: 0;
-}
-
-.msg {
-  font-size: 13px;
-  color: var(--text);
-  line-height: 1.4;
-}
-
-.close {
-  width: 32px;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background-color 120ms;
-}
-
-.close:hover {
-  background: var(--surface-hover);
-}
+.portal { position: fixed; right: clamp(0.75rem, 3vw, 1.5rem); bottom: clamp(1rem, 4vw, 2rem); z-index: 120; display: flex; flex-direction: column; align-items: flex-end; gap: 0.65rem; width: min(23rem, calc(100vw - 1.5rem)); pointer-events: none; }
+.toast { position: relative; display: flex; align-items: center; width: 100%; overflow: hidden; pointer-events: auto; border: 1px solid var(--border); border-radius: 0.85rem; background: var(--surface); box-shadow: var(--shadow-lg); animation: toastIn 220ms var(--ease-out) both; }
+.bar { width: 0.24rem; align-self: stretch; flex: 0 0 auto; }
+.bar.success { background: var(--green-500); } .bar.error { background: var(--red-500); } .bar.info { background: var(--primary); }
+.content { display: flex; flex: 1; align-items: center; gap: 0.55rem; min-width: 0; padding: 0.85rem 0.8rem; }
+.icon { flex: 0 0 auto; } .icon.success { color: var(--green-600); } .icon.error { color: var(--red-500); } .icon.info { color: var(--primary); }
+.msg { color: var(--text-primary); font-size: 0.78rem; font-weight: 700; line-height: 1.4; }
+.close { display: grid; place-items: center; width: 2.35rem; height: 2.35rem; flex: 0 0 auto; margin-right: 0.25rem; color: var(--text-tertiary); border: 1px solid transparent; border-radius: 0.55rem; transition: color var(--transition-fast), background var(--transition-fast); }
+.close:hover { color: var(--text-primary); background: var(--surface-hover); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(0.5rem) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
