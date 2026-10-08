@@ -1,23 +1,23 @@
 .topbar {
   position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between;
-  min-height: 4.25rem; padding: 0 clamp(1rem, 3.2vw, 3.5rem); color: var(--text-primary);
-  background: var(--surface); border-bottom: 1px solid var(--border);
-  box-shadow: 0 1px 0 rgba(15, 26, 43, 0.02);
+  min-height: 4rem; padding: 0 clamp(1rem, 4vw, 4.5rem); color: var(--text-primary);
+  background: var(--warm-ivory); border-bottom: 1px solid var(--border);
+  box-shadow: none;
 }
-.searchWrapper { position: relative; display: flex; align-items: center; gap: 0.65rem; width: min(27rem, 42vw); padding: 0.61rem 0.9rem; border: 1px solid var(--border); border-radius: var(--radius-full); background: var(--surface-pill); transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast); }
-.searchWrapper:focus-within { border-color: var(--cyan-500); background: var(--surface); box-shadow: 0 0 0 0.25rem rgba(53, 185, 194, 0.13); }
+.searchWrapper { position: relative; display: flex; align-items: center; gap: 0.65rem; width: min(27rem, 42vw); padding: 0.61rem 0.9rem; border: 1px solid var(--border); border-radius: 0.35rem; background: var(--surface); transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast); }
+.searchWrapper:focus-within { border-color: var(--forest); background: var(--paper); box-shadow: 0 0 0 0.2rem rgba(48, 72, 59, 0.1); }
 .searchIcon { flex: 0 0 auto; color: var(--text-tertiary); }
 .searchInput { width: 100%; min-width: 0; padding: 0; color: var(--text-primary); border: 0; outline: 0; background: transparent; font-size: 0.79rem; }
 .searchInput::placeholder { color: var(--text-tertiary); }
 .actions { display: flex; align-items: center; gap: 0.65rem; }
-.createBtn { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 2.35rem; padding: 0 0.9rem; color: #fff; border: 1px solid var(--blue-600); border-radius: 0.58rem; background: var(--blue-600); box-shadow: 0 0.35rem 0.8rem rgba(76, 91, 212, 0.16); font-size: 0.77rem; font-weight: 750; transition: background var(--transition-fast), box-shadow var(--transition-fast); }
-.createBtn:hover { background: var(--blue-700); box-shadow: 0 0.5rem 1rem rgba(76, 91, 212, 0.22); }
+.createBtn { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 2.35rem; padding: 0 0.9rem; color: var(--warm-ivory); border: 1px solid var(--forest); border-radius: 0.35rem; background: var(--forest); box-shadow: none; font-size: 0.77rem; font-weight: 700; transition: background var(--transition-fast), box-shadow var(--transition-fast); }
+.createBtn:hover { background: var(--forest-dark); box-shadow: none; }
 .createBtn:active { transform: translateY(0); }
-.iconBtn { position: relative; display: grid; place-items: center; width: 2.35rem; height: 2.35rem; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 0.68rem; background: var(--surface); transition: color var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast); }
-.iconBtn:hover { color: var(--text-primary); border-color: var(--cyan-500); background: var(--surface-hover); }
+.iconBtn { position: relative; display: grid; place-items: center; width: 2.35rem; height: 2.35rem; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 0.35rem; background: transparent; transition: color var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast); }
+.iconBtn:hover { color: var(--text-primary); border-color: var(--forest); background: var(--surface-hover); }
 .unreadDot { position: absolute; top: 0.4rem; right: 0.4rem; width: 0.42rem; height: 0.42rem; border: 2px solid var(--surface); border-radius: 50%; background: var(--red-500); }
 .profileWrapper { position: relative; }
-.profilePill { display: flex; align-items: center; gap: 0.55rem; min-height: 2.55rem; padding: 0.2rem 0.6rem 0.2rem 0.25rem; color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-full); background: var(--surface); transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast); }
+.profilePill { display: flex; align-items: center; gap: 0.55rem; min-height: 2.55rem; padding: 0.2rem 0.6rem 0.2rem 0.25rem; color: var(--text-primary); border: 1px solid var(--border); border-radius: 0.35rem; background: transparent; transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast); }
 .profilePill:hover, .profilePill[aria-expanded='true'] { border-color: var(--border-strong); background: var(--surface-hover); box-shadow: var(--shadow-sm); }
 .profileInfo { display: flex; min-width: 0; flex-direction: column; text-align: left; }
 .profileName { max-width: 8.5rem; overflow: hidden; color: var(--text-primary); font-size: 0.74rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; }

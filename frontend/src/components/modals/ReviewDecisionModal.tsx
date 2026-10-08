@@ -127,7 +127,7 @@ export function ReviewDecisionModal({
               className={styles.submitBtn}
               disabled={pending}
               style={{
-                background: decision === 'approved' ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' : 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                 background: decision === 'approved' ? 'var(--forest)' : 'var(--terracotta)',
               }}
             >
               {pending ? 'Saving…' : decision === 'approved' ? 'Approve Task' : 'Request Revision'}
