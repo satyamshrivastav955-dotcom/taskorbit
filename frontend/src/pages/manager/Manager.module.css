@@ -154,7 +154,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  background: var(--primary-gradient);
+  background: var(--primary);
   color: #FFFFFF;
   border-radius: var(--radius-md);
   font-size: 12.5px;
@@ -367,6 +367,42 @@
 .statusGreen {
   background: #DCFCE7;
   color: #16A34A;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 150px;
+  padding: 24px 16px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.emptyState span {
+  max-width: 280px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+.projectRow:focus-visible,
+.tabBtn:focus-visible,
+.linkAction:focus-visible,
+.primaryActionBtn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 /* Activity Feed */

@@ -12,6 +12,8 @@ import {
   AlertCircle,
   MoreVertical,
   Paperclip,
+  Inbox,
+  Loader2,
 } from 'lucide-react';
 import { AppLayout, PageContainer } from '../../components/layout/AppLayout';
 import { StatusBadge } from '../../components/ui/StatusBadge';
@@ -20,17 +22,20 @@ import { ProgressBar } from '../../components/ui/ProgressBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { CreateTaskModal } from '../../components/modals/CreateTaskModal';
 import { dataStore } from '../../services/demoData';
+import { useToast } from '../../components/ui/Toast';
 import type { Task, TaskStatus } from '../../types';
 import styles from './Tasks.module.css';
 
 export function ManagerTasks(): JSX.Element {
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [, setTick] = useState(0);
   const [viewMode, setViewMode] = useState<'board' | 'table'>('board');
   const [searchQuery, setSearchQuery] = useState('');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState('');
+  const setSelectedTask = (task: Task | null): void => setSelectedTaskId(task?.id ?? '');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [drawerTab, setDrawerTab] = useState<'details' | 'subtasks' | 'files' | 'activity'>('details');
 
@@ -39,8 +44,18 @@ export function ManagerTasks(): JSX.Element {
   }, []);
 
   const tasks = dataStore.getTasks();
+  const selectedTask = tasks.find((task) => task.id === selectedTaskId) ?? null;
+  useEffect(() => {
+    if (selectedTaskId === '') return;
+    const onEscape = (event: KeyboardEvent): void => { if (event.key === 'Escape' && !document.querySelector('[role="dialog"]')) setSelectedTaskId(''); };
+    document.addEventListener('keydown', onEscape);
+    return () => document.removeEventListener('keydown', onEscape);
+  }, [selectedTaskId]);
   const users = dataStore.getUsers();
   const projects = dataStore.getProjects();
+  const loading = dataStore.isLoading();
+  const error = dataStore.getError();
+  const selectedActivities = selectedTask === null ? [] : dataStore.getActivities().filter((activity) => activity.targetId === selectedTask.id || activity.projectId === selectedTask.projectId);
 
   const filteredTasks = tasks.filter((t) => {
     const matchesSearch =
@@ -139,7 +154,23 @@ export function ManagerTasks(): JSX.Element {
           {/* Kanban Board View */}
           {viewMode === 'board' ? (
             <div className={styles.boardGrid}>
-              {columns.map((col) => {
+              {loading && tasks.length === 0 ? (
+                <div className={styles.emptyState} role="status">
+                  <Loader2 size={28} color="var(--primary)" className={styles.spinner} aria-hidden="true" />
+                  <p>Loading tasks…</p>
+                </div>
+              ) : error !== '' && tasks.length === 0 ? (
+                <div className={styles.emptyState} role="alert">
+                  <p>Tasks unavailable</p>
+                  <span>{error}</span>
+                </div>
+              ) : filteredTasks.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <Inbox size={28} color="var(--text-muted)" aria-hidden="true" />
+                  <p>{tasks.length === 0 ? 'No tasks yet' : 'No matching tasks'}</p>
+                  <span>{tasks.length === 0 ? 'Create a task to start managing delivery.' : 'Try a different search or filter.'}</span>
+                </div>
+              ) : columns.map((col) => {
                 const colTasks = filteredTasks.filter((t) => t.status === col.status);
 
                 return (
@@ -152,7 +183,7 @@ export function ManagerTasks(): JSX.Element {
                       <button
                         className={styles.addColumnBtn}
                         onClick={() => setShowCreateModal(true)}
-                        title="Add task in this status"
+                        aria-label="Create task" title="Create task"
                       >
                         <Plus size={14} />
                       </button>
@@ -167,7 +198,15 @@ export function ManagerTasks(): JSX.Element {
                           <div
                             key={t.id}
                             className={`${styles.taskCard} ${isSelected ? styles.selectedCard : ''}`}
+                            role="button"
+                            tabIndex={0}
                             onClick={() => setSelectedTask(t)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                setSelectedTask(t);
+                              }
+                            }}
                           >
                             <div className={styles.cardTop}>
                               <div className={styles.cardTitle}>{t.title}</div>
@@ -182,7 +221,7 @@ export function ManagerTasks(): JSX.Element {
                             <div className={styles.cardFooter}>
                               <div className={styles.assigneeRow}>
                                 <Avatar name={assignee?.name} src={assignee?.avatar} size="sm" />
-                                <span className={styles.assigneeName}>{assignee?.name}</span>
+                                <span className={styles.assigneeName}>{assignee?.name ?? 'Unassigned'}</span>
                               </div>
                               <PriorityBadge priority={t.priority} size="sm" />
                             </div>
@@ -218,19 +257,25 @@ export function ManagerTasks(): JSX.Element {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTasks.map((t) => {
+                  {filteredTasks.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className={styles.tableEmptyState}>
+                        {loading ? 'Loading tasks…' : error !== '' ? error : 'No matching tasks.'}
+                      </td>
+                    </tr>
+                  ) : filteredTasks.map((t) => {
                     const assignee = users.find((u) => u.uid === t.assigneeId);
                     return (
                       <tr key={t.id} onClick={() => setSelectedTask(t)} style={{ cursor: 'pointer' }}>
                         <td>
                           <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{t.title}</div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.taskIdCode || 'TASK'}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.taskIdCode || '—'}</div>
                         </td>
                         <td>{t.projectName}</td>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <Avatar name={assignee?.name} src={assignee?.avatar} size="sm" />
-                            <span>{assignee?.name}</span>
+                            <span>{assignee?.name ?? 'Unassigned'}</span>
                           </div>
                         </td>
                         <td>{t.startDate}</td>
@@ -258,36 +303,23 @@ export function ManagerTasks(): JSX.Element {
 
           {/* Slide-over / Task Details Drawer (Reference Image 15 right panel) */}
           {selectedTask && (
-            <div className={styles.drawer}>
+            <aside className={styles.drawer} aria-labelledby="task-drawer-title">
               <div className={styles.drawerHeader}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <select
-                    className={styles.statusSelect}
-                    value={selectedTask.status}
-                    onChange={(e) => {
-                      dataStore.updateTask(selectedTask.id, { status: e.target.value as TaskStatus });
-                      setSelectedTask({ ...selectedTask, status: e.target.value as TaskStatus });
-                    }}
-                  >
-                    <option value="todo">To Do</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="in_review">In Review</option>
-                    <option value="revision">Revision</option>
-                    <option value="approved">Completed</option>
-                  </select>
+                  <StatusBadge status={selectedTask.status} size="sm" />
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
                     className={styles.drawerIconBtn}
                     onClick={() => navigate(`/manager/tasks/${selectedTask.id}`)}
-                    title="Open full page"
+                    aria-label="Open task detail" title="Open full page"
                   >
                     <MoreVertical size={16} />
                   </button>
                   <button
                     className={styles.drawerIconBtn}
                     onClick={() => setSelectedTask(null)}
-                    title="Close"
+                    aria-label="Close task details" title="Close"
                   >
                     <X size={16} />
                   </button>
@@ -295,7 +327,7 @@ export function ManagerTasks(): JSX.Element {
               </div>
 
               <div className={styles.drawerBody}>
-                <h2 className={styles.drawerTitle}>{selectedTask.title}</h2>
+                <h2 id="task-drawer-title" className={styles.drawerTitle}>{selectedTask.title}</h2>
                 <div className={styles.drawerMeta}>
                   <div className={styles.metaRow}>
                     <span className={styles.metaKey}>Project:</span>
@@ -338,11 +370,7 @@ export function ManagerTasks(): JSX.Element {
 
                     <div className={styles.sectionHeader} style={{ marginTop: '16px' }}>Requirements</div>
                     <ul className={styles.reqList}>
-                      {(selectedTask.requirementsList || [
-                        'Use approved brand guidelines',
-                        'Design for desktop and mobile',
-                        'Follow accessibility standards',
-                      ]).map((r, i) => (
+                      {(selectedTask.requirementsList || []).map((r, i) => (
                         <li key={i}>{r}</li>
                       ))}
                     </ul>
@@ -371,12 +399,7 @@ export function ManagerTasks(): JSX.Element {
                     />
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '14px' }}>
-                      {(selectedTask.subtasks || [
-                        { id: '1', title: 'Research & gather references', completed: true },
-                        { id: '2', title: 'Create initial wireframes', completed: true },
-                        { id: '3', title: 'Design high-fidelity mockups', completed: false },
-                        { id: '4', title: 'Internal team walkthrough', completed: false },
-                      ]).map((st) => (
+                      {(selectedTask.subtasks || []).map((st) => (
                         <label
                           key={st.id}
                           style={{
@@ -393,7 +416,7 @@ export function ManagerTasks(): JSX.Element {
                           <input
                             type="checkbox"
                             checked={st.completed}
-                            onChange={() => dataStore.toggleSubtask(selectedTask.id, st.id)}
+                            onChange={() => { void dataStore.toggleSubtask(selectedTask.id, st.id).catch((error: unknown) => toast(error instanceof Error ? error.message : 'Checklist update failed.', 'error')); }}
                           />
                           <span style={{ textDecoration: st.completed ? 'line-through' : 'none', color: st.completed ? 'var(--text-muted)' : 'var(--text-primary)' }}>
                             {st.title}
@@ -406,10 +429,7 @@ export function ManagerTasks(): JSX.Element {
 
                 {drawerTab === 'files' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {(selectedTask.attachments || [
-                      { id: 'a-1', name: 'homepage-wireframe.fig', size: '2.4 MB' },
-                      { id: 'a-2', name: 'brand-guidelines.pdf', size: '1.8 MB' },
-                    ]).map((f, i) => (
+                    {(selectedTask.attachments || []).map((f, i) => (
                       <div
                         key={i}
                         style={{
@@ -423,7 +443,7 @@ export function ManagerTasks(): JSX.Element {
                       >
                         <Paperclip size={16} color="var(--primary)" />
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '13px', fontWeight: 500 }}>{f.name}</div>
+                          <div style={{ fontSize: '13px', fontWeight: 500 }}>{f.url ? <a href={f.url} target="_blank" rel="noreferrer">{f.name}</a> : f.name}</div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{f.size}</div>
                         </div>
                       </div>
@@ -433,19 +453,11 @@ export function ManagerTasks(): JSX.Element {
 
                 {drawerTab === 'activity' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
-                      • Created by Rahul Sharma on Mar 10, 2025
-                    </div>
-                    <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
-                      • Status changed to In Progress by Priya Mehta
-                    </div>
-                    <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
-                      • 2 subtasks completed
-                    </div>
+                    {selectedActivities.length === 0 ? <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>No activity recorded yet.</div> : selectedActivities.slice(0, 8).map((activity) => <div key={activity.id} style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>• {activity.actorName} {activity.description} · {activity.timeAgo}</div>)}
                   </div>
                 )}
               </div>
-            </div>
+            </aside>
           )}
         </div>
 

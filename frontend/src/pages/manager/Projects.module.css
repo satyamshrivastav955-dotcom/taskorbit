@@ -22,7 +22,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 18px;
-  background: var(--primary-gradient);
+  background: var(--primary);
   color: #FFFFFF;
   border-radius: var(--radius-md);
   font-size: 13.5px;
@@ -279,6 +279,44 @@
   color: var(--text-muted);
 }
 
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 220px;
+  padding: 24px 16px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.emptyState span {
+  max-width: 280px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+.projectCardItem:focus-visible,
+.pillBtn:focus-visible,
+.sortBtn:focus-visible,
+.filterBtn:focus-visible,
+.detailTabBtn:focus-visible,
+.editBtn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 /* Details Panel (Right) */
 .detailCard {
   background: #FFFFFF;
@@ -323,7 +361,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  background: var(--primary-gradient);
+  background: var(--primary);
   color: #FFFFFF;
   border-radius: var(--radius-md);
   font-size: 12.5px;
@@ -459,4 +497,49 @@
 .activityMiniTime {
   font-size: 11px;
   color: var(--text-muted);
+}
+
+@media (max-width: 760px) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .topControlRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .filterPills,
+  .searchAndSort {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .searchBox {
+    flex: 1 1 180px;
+    width: auto;
+  }
+
+  .projectCardItem {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .projectCardProgress {
+    min-width: 150px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .projectCardItem,
+  .newProjectBtn,
+  .detailTabBtn {
+    transition: none;
+  }
+
+  .spinner {
+    animation: none;
+  }
 }

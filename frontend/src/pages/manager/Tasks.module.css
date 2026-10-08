@@ -22,7 +22,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 18px;
-  background: var(--primary-gradient);
+  background: var(--primary);
   color: #FFFFFF;
   border-radius: var(--radius-md);
   font-size: 13.5px;
@@ -451,4 +451,89 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: min(100%, 320px);
+  min-height: 220px;
+  padding: 24px 16px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.emptyState span {
+  max-width: 280px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.tableEmptyState {
+  padding: 48px 20px !important;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+.taskCard:focus-visible,
+.toggleBtn:focus-visible,
+.addColumnBtn:focus-visible,
+.drawerIconBtn:focus-visible,
+.drawerTabBtn:focus-visible,
+.viewLink:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .controlBar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .searchWrapper {
+    width: 100%;
+  }
+
+  .filterGroup {
+    flex-wrap: wrap;
+  }
+
+  .boardGrid {
+    grid-template-columns: repeat(5, minmax(190px, 1fr));
+  }
+
+  .drawer {
+    width: min(100%, 360px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taskCard,
+  .drawer {
+    transition: none;
+    animation: none;
+  }
+
+  .spinner {
+    animation: none;
+  }
 }

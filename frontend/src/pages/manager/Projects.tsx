@@ -11,26 +11,25 @@ import {
   Clock,
   Edit2,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
+  Inbox,
+  Loader2,
 } from 'lucide-react';
 import { AppLayout, PageContainer } from '../../components/layout/AppLayout';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { PriorityBadge } from '../../components/ui/PriorityBadge';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { Avatar, AvatarGroup } from '../../components/ui/Avatar';
-import { CreateProjectModal } from '../../components/modals/CreateProjectModal';
 import { dataStore } from '../../services/demoData';
 import styles from './Projects.module.css';
 
 export function ManagerProjects(): JSX.Element {
   const navigate = useNavigate();
   const [, setTick] = useState(0);
-  const [filterTab, setFilterTab] = useState<'all' | 'active' | 'at_risk' | 'delayed' | 'completed'>('all');
+  const [filterTab, setFilterTab] = useState<'all' | 'active' | 'submitted' | 'completed'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('proj-1');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [sideTab, setSideTab] = useState<'overview' | 'tasks' | 'team' | 'activity'>('overview');
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [sortBy, setSortBy] = useState<'deadline' | 'progress'>('deadline');
 
   useEffect(() => {
     return dataStore.subscribe(() => setTick((t) => t + 1));
@@ -40,11 +39,12 @@ export function ManagerProjects(): JSX.Element {
   const users = dataStore.getUsers();
   const tasks = dataStore.getTasks();
   const activities = dataStore.getActivities();
+  const loading = dataStore.isLoading();
+  const error = dataStore.getError();
 
   // Counts
   const activeCount = projects.filter((p) => p.status === 'on_track' || p.status === 'active').length;
-  const atRiskCount = projects.filter((p) => p.status === 'at_risk').length;
-  const delayedCount = projects.filter((p) => p.status === 'delayed').length;
+  const submittedCount = projects.filter((p) => p.status === 'submitted' || p.status === 'draft').length;
   const completedCount = projects.filter((p) => p.status === 'completed').length;
 
   const filteredProjects = projects.filter((p) => {
@@ -54,12 +54,15 @@ export function ManagerProjects(): JSX.Element {
 
     if (!matchesSearch) return false;
     if (filterTab === 'active') return p.status === 'on_track' || p.status === 'active';
-    if (filterTab === 'at_risk') return p.status === 'at_risk';
-    if (filterTab === 'delayed') return p.status === 'delayed';
+    if (filterTab === 'submitted') return p.status === 'submitted' || p.status === 'draft';
     if (filterTab === 'completed') return p.status === 'completed';
     return true;
   });
 
+  const orderedProjects = [...filteredProjects].sort((a, b) => {
+    if (sortBy === 'progress') return b.progress - a.progress;
+    return a.deadline.localeCompare(b.deadline);
+  });
   const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
   const projectTasks = tasks.filter((t) => t.projectId === selectedProject?.id);
   const projectTeam = (selectedProject?.teamIds || [])
@@ -80,10 +83,10 @@ export function ManagerProjects(): JSX.Element {
           </div>
           <button
             className={styles.newProjectBtn}
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => setFilterTab('submitted')}
           >
-            <Plus size={16} />
-            <span>New Project</span>
+            <Inbox size={16} />
+            <span>Review requests</span>
           </button>
         </div>
 
@@ -104,16 +107,10 @@ export function ManagerProjects(): JSX.Element {
               Active <span className={styles.pillCount}>{activeCount}</span>
             </button>
             <button
-              className={`${styles.pillBtn} ${filterTab === 'at_risk' ? styles.activePill : ''}`}
-              onClick={() => setFilterTab('at_risk')}
+              className={`${styles.pillBtn} ${filterTab === 'submitted' ? styles.activePill : ''}`}
+              onClick={() => setFilterTab('submitted')}
             >
-              At Risk <span className={styles.pillCount}>{atRiskCount}</span>
-            </button>
-            <button
-              className={`${styles.pillBtn} ${filterTab === 'delayed' ? styles.activePill : ''}`}
-              onClick={() => setFilterTab('delayed')}
-            >
-              Delayed <span className={styles.pillCount}>{delayedCount}</span>
+              Needs review <span className={styles.pillCount}>{submittedCount}</span>
             </button>
             <button
               className={`${styles.pillBtn} ${filterTab === 'completed' ? styles.activePill : ''}`}
@@ -134,13 +131,21 @@ export function ManagerProjects(): JSX.Element {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <button className={styles.sortBtn}>
-              <span>Sort by</span>
-              <ArrowUpDown size={14} />
+            <button
+              className={styles.sortBtn}
+              onClick={() => setSortBy((current) => current === 'deadline' ? 'progress' : 'deadline')}
+              aria-label={`Sort projects by ${sortBy === 'deadline' ? 'progress' : 'deadline'}`}
+            >
+              <span>{sortBy === 'deadline' ? 'By deadline' : 'By progress'}</span>
+              <ArrowUpDown size={14} aria-hidden="true" />
             </button>
-            <button className={styles.filterBtn}>
-              <Filter size={14} />
-              <span>Filter</span>
+            <button
+              className={styles.filterBtn}
+              onClick={() => { setSearchQuery(''); setFilterTab('all'); }}
+              aria-label="Clear project filters"
+            >
+              <Filter size={14} aria-hidden="true" />
+              <span>Clear filters</span>
             </button>
           </div>
         </div>
@@ -150,7 +155,23 @@ export function ManagerProjects(): JSX.Element {
           {/* Projects List (Left Column) */}
           <div className={styles.listCard}>
             <div className={styles.projectList}>
-              {filteredProjects.map((p) => {
+              {loading && projects.length === 0 ? (
+                <div className={styles.emptyState} role="status">
+                  <Loader2 size={28} color="var(--primary)" className={styles.spinner} aria-hidden="true" />
+                  <p>Loading projects…</p>
+                </div>
+              ) : error !== '' && projects.length === 0 ? (
+                <div className={styles.emptyState} role="alert">
+                  <p>Projects unavailable</p>
+                  <span>{error}</span>
+                </div>
+              ) : orderedProjects.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <Inbox size={28} color="var(--text-muted)" aria-hidden="true" />
+                  <p>{projects.length === 0 ? 'No projects yet' : 'No matching projects'}</p>
+                  <span>{projects.length === 0 ? 'Create a project to begin tracking delivery.' : 'Try clearing the current filters.'}</span>
+                </div>
+              ) : orderedProjects.map((p) => {
                 const team = (p.teamIds || [])
                   .map((uid) => users.find((u) => u.uid === uid))
                   .filter(Boolean) as { name: string; avatar?: string }[];
@@ -160,7 +181,16 @@ export function ManagerProjects(): JSX.Element {
                   <div
                     key={p.id}
                     className={`${styles.projectCardItem} ${isSelected ? styles.selectedProjectItem : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isSelected}
                     onClick={() => setSelectedProjectId(p.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setSelectedProjectId(p.id);
+                      }
+                    }}
                   >
                     <div className={styles.projectCardIcon}>
                       <FolderKanban size={18} color="var(--primary)" />
@@ -179,7 +209,7 @@ export function ManagerProjects(): JSX.Element {
                     </div>
 
                     <div className={styles.projectCardFraction}>
-                      {p.tasksCompleted ?? 12} / {p.totalTasks ?? 17} tasks
+                       {p.tasksCompleted ?? 0} / {p.totalTasks ?? 0} tasks
                     </div>
 
                     <div className={styles.projectCardDate}>{p.deadline}</div>
@@ -204,18 +234,9 @@ export function ManagerProjects(): JSX.Element {
               })}
             </div>
 
-            {/* Pagination footer */}
             <div className={styles.paginationFooter}>
-              <button className={styles.pageArrow}>
-                <ChevronLeft size={16} />
-              </button>
-              <button className={`${styles.pageNum} ${styles.activePageNum}`}>1</button>
-              <button className={styles.pageNum}>2</button>
-              <button className={styles.pageArrow}>
-                <ChevronRight size={16} />
-              </button>
               <span className={styles.showingText}>
-                Showing 1-{filteredProjects.length} of {projects.length} projects
+                Showing {orderedProjects.length} of {projects.length} projects
               </span>
             </div>
           </div>
@@ -291,7 +312,7 @@ export function ManagerProjects(): JSX.Element {
                     <div className={styles.progressHeaderRow}>
                       <span className={styles.progressBig}>{selectedProject.progress}%</span>
                       <span className={styles.progressTasks}>
-                        {selectedProject.tasksCompleted ?? 12} of {selectedProject.totalTasks ?? 17} tasks completed
+                         {selectedProject.tasksCompleted ?? 0} of {selectedProject.totalTasks ?? 0} tasks completed
                       </span>
                     </div>
                     <ProgressBar value={selectedProject.progress} height={8} />
@@ -404,9 +425,6 @@ export function ManagerProjects(): JSX.Element {
           )}
         </div>
 
-        {showCreateModal && (
-          <CreateProjectModal onClose={() => setShowCreateModal(false)} />
-        )}
       </PageContainer>
     </AppLayout>
   );
