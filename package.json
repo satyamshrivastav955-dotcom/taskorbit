@@ -1,0 +1,17 @@
+{
+  "name": "taskorbit",
+  "private": true,
+  "scripts": {
+    "test": "npm --prefix node-backend test",
+    "test:workflow": "node scripts/test-workflow.cjs",
+    "test:ui": "node scripts/test-ui.cjs",
+    "dev": "node scripts/dev.cjs",
+    "dev:demo": "node scripts/dev.cjs",
+    "build": "npm --prefix frontend run build"
+  },
+  "devDependencies": {
+    "firebase-tools": "^14.0.0",
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "@playwright/test": "^1.51.0"
+  }
+}
