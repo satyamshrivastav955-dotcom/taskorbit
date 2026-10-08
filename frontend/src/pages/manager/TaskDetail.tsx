@@ -22,38 +22,45 @@ import { PriorityBadge } from '../../components/ui/PriorityBadge';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { dataStore } from '../../services/demoData';
-import type { TaskStatus } from '../../types';
+import { useToast } from '../../components/ui/Toast';
+import { EditTaskModal } from '../../components/modals/EditTaskModal';
 
 export function ManagerTaskDetail(): JSX.Element {
+  const { toast } = useToast();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [, setTick] = useState(0);
   const [activeTab, setActiveTab] = useState<'overview' | 'subtasks' | 'files' | 'comments' | 'activity'>('overview');
   const [commentText, setCommentText] = useState('');
+  const [editingTask, setEditingTask] = useState(false);
 
   useEffect(() => {
     return dataStore.subscribe(() => setTick((t) => t + 1));
   }, []);
 
-  const task = dataStore.getTaskById(id || 'task-1') || dataStore.getTasks()[0];
+  const task = dataStore.getTaskById(id || '');
+  if (!task) {
+    const loading = dataStore.isLoading();
+    const error = dataStore.getError();
+    return <AppLayout role="manager"><PageContainer><div style={{ textAlign: 'center', padding: '72px 20px' }} role={loading || error === '' ? 'status' : 'alert'}><h1>{loading ? 'Loading task…' : 'Task not found'}</h1><p style={{ color: 'var(--text-secondary)', marginTop: '6px' }}>{error !== '' ? error : loading ? 'Fetching the latest task details.' : 'The task may have been removed or is not available in this workspace.'}</p><button onClick={() => navigate('/manager/tasks')} style={{ marginTop: '16px', color: 'var(--primary)', fontWeight: 600 }}>Back to tasks</button></div></PageContainer></AppLayout>;
+  }
   const users = dataStore.getUsers();
   const assignee = users.find((u) => u.uid === task.assigneeId);
   const reviewer = users.find((u) => u.uid === task.reviewerId);
+  const submissions = dataStore.getSubmissions(task.id);
+  const submissionFiles = submissions.flatMap((submission) => submission.files ?? [{ id: submission.id, name: submission.fileName, size: '', type: 'file', url: submission.fileUrl, uploadedAt: submission.submittedAt }]);
   const activities = dataStore.getActivities().filter((a) => a.targetId === task.id || a.projectId === task.projectId);
+  const linkedRequirements = dataStore.getRequirements(task.projectId).filter((requirement) => (task.requirementIds ?? []).includes(requirement.id));
 
   const handleToggleSubtask = (stId: string) => {
-    dataStore.toggleSubtask(task.id, stId);
+    void dataStore.toggleSubtask(task.id, stId).catch((error: unknown) => toast(error instanceof Error ? error.message : 'Checklist update failed.', 'error'));
   };
 
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
-    dataStore.addComment(task.id, commentText);
+    void dataStore.addComment(task.id, commentText).catch((error: unknown) => toast(error instanceof Error ? error.message : 'Comment failed.', 'error'));
     setCommentText('');
-  };
-
-  const handleMarkComplete = () => {
-    dataStore.updateTask(task.id, { status: 'approved', progress: 100 });
   };
 
   return (
@@ -76,40 +83,11 @@ export function ManagerTaskDetail(): JSX.Element {
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              onClick={handleMarkComplete}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '7px 14px',
-                background: '#FFFFFF',
-                border: '1px solid var(--border)',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: 600,
-                color: '#16A34A',
-              }}
-            >
-              <CheckCircle2 size={16} />
-              <span>Mark Complete</span>
-            </button>
-            <button
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '7px 14px',
-                background: 'var(--primary-gradient)',
-                color: '#FFFFFF',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: 600,
-              }}
-            >
-              <Edit2 size={15} />
-              <span>Edit Task</span>
-            </button>
+            {!['submitted', 'in_review', 'approved'].includes(task.status) && <button type="button" onClick={() => setEditingTask(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', color: '#fff', background: 'var(--primary)', borderRadius: '8px', fontSize: '13px' }}><Edit2 size={14} /> Edit task</button>}
+             <button onClick={() => navigate('/manager/tasks')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+               <ArrowLeft size={15} />
+               <span>Back to tasks</span>
+             </button>
           </div>
         </div>
 
@@ -147,7 +125,7 @@ export function ManagerTaskDetail(): JSX.Element {
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '6px' }}>
                 <span>{task.projectName}</span>
                 <span>•</span>
-                <span>{task.taskIdCode || 'TASK-101'}</span>
+                <span>{task.taskIdCode || 'Task'}</span>
                 <span>•</span>
                 <span>Created {task.startDate}</span>
               </div>
@@ -156,7 +134,7 @@ export function ManagerTaskDetail(): JSX.Element {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <PriorityBadge priority={task.priority} size="md" />
-            {(task.labels || ['UI/UX', 'Design']).map((l, i) => (
+            {(task.labels || []).map((l, i) => (
               <span
                 key={i}
                 style={{
@@ -175,7 +153,7 @@ export function ManagerTaskDetail(): JSX.Element {
         </div>
 
         {/* Two-Column Task Layout matching Reference Image 8 & 14 */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '24px' }}>
+        <div className="responsive-grid" style={{ gridTemplateColumns: '1.8fr 1fr', gap: '24px' }}>
           {/* Left Column: Details, Subtasks, Attachments */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Description */}
@@ -187,12 +165,7 @@ export function ManagerTaskDetail(): JSX.Element {
 
               <h4 style={{ fontSize: '14px', fontWeight: 700, marginTop: '18px', marginBottom: '8px' }}>Requirements</h4>
               <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13.5px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {(task.requirementsList || [
-                  'Use approved brand guidelines',
-                  'Design for desktop and mobile',
-                  'Include hero section, features, and testimonials',
-                  'Follow accessibility best practices',
-                ]).map((req, i) => (
+                {(task.requirementsList ?? linkedRequirements.map((requirement) => requirement.title)).map((req, i) => (
                   <li key={i}>{req}</li>
                 ))}
               </ul>
@@ -202,24 +175,13 @@ export function ManagerTaskDetail(): JSX.Element {
             <div style={{ background: '#FFFFFF', padding: '22px', borderRadius: '12px', border: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <h3 style={{ fontSize: '15px', fontWeight: 700 }}>
-                  Attachments ({task.attachments?.length || 4})
+                  Attachments ({submissionFiles.length})
                 </h3>
-                <button
-                  onClick={() => alert('File upload dialog')}
-                  style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12.5px', color: 'var(--primary)', fontWeight: 600 }}
-                >
-                  <Plus size={14} />
-                  <span>Add File</span>
-                </button>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Files are added with submissions</span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                {(task.attachments || [
-                  { id: '1', name: 'homepage-wireframe.fig', type: 'figma', size: '2.4 MB' },
-                  { id: '2', name: 'brand-guidelines.pdf', type: 'pdf', size: '1.8 MB' },
-                  { id: '3', name: 'hero-section.png', type: 'image', size: '1.2 MB' },
-                  { id: '4', name: 'competitor-examples.zip', type: 'archive', size: '4.6 MB' },
-                ]).map((att, i) => (
+              <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                    {submissionFiles.map((att, i) => (
                   <div
                     key={i}
                     style={{
@@ -246,7 +208,7 @@ export function ManagerTaskDetail(): JSX.Element {
             <div style={{ background: '#FFFFFF', padding: '22px', borderRadius: '12px', border: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <h3 style={{ fontSize: '15px', fontWeight: 700 }}>
-                  Subtasks ({task.subtasks?.length || 4})
+                  Subtasks ({task.subtasks?.length || 0})
                 </h3>
                 <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
                   {(task.subtasks || []).filter((s) => s.completed).length} of {(task.subtasks || []).length} completed
@@ -258,18 +220,13 @@ export function ManagerTaskDetail(): JSX.Element {
                     ? Math.round(
                         ((task.subtasks || []).filter((s) => s.completed).length / (task.subtasks || []).length) * 100
                       )
-                    : 50
+                    : 0
                 }
                 height={6}
               />
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
-                {(task.subtasks || [
-                  { id: 'st-1', title: 'Design hero section', completed: true, dueDate: 'Mar 12, 2025' },
-                  { id: 'st-2', title: 'Create feature cards', completed: true, dueDate: 'Mar 14, 2025' },
-                  { id: 'st-3', title: 'Design testimonials section', completed: false, dueDate: 'Mar 16, 2025' },
-                  { id: 'st-4', title: 'Mobile responsive design', completed: false, dueDate: 'Mar 18, 2025' },
-                ]).map((st) => (
+                    {(task.subtasks || []).map((st) => (
                   <div
                     key={st.id}
                     style={{
@@ -314,18 +271,7 @@ export function ManagerTaskDetail(): JSX.Element {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Status</span>
-                  <select
-                    value={task.status}
-                    onChange={(e) => dataStore.updateTask(task.id, { status: e.target.value as TaskStatus })}
-                    style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '12px', fontWeight: 600 }}
-                  >
-                    <option value="todo">To Do</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="submitted">Submitted</option>
-                    <option value="in_review">In Review</option>
-                    <option value="revision">Revision</option>
-                    <option value="approved">Approved</option>
-                  </select>
+                  <StatusBadge status={task.status} size="sm" />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Assignee</span>
@@ -351,11 +297,11 @@ export function ManagerTaskDetail(): JSX.Element {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Estimated Hours</span>
-                  <span style={{ fontWeight: 600 }}>{task.estimatedHours || 24} hrs</span>
+                  <span style={{ fontWeight: 600 }}>{task.estimatedHours === undefined ? '—' : `${task.estimatedHours} hrs`}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Actual Hours</span>
-                  <span style={{ fontWeight: 600 }}>{task.actualHours || 12} hrs</span>
+                  <span style={{ fontWeight: 600 }}>{task.actualHours === undefined ? '—' : `${task.actualHours} hrs`}</span>
                 </div>
               </div>
             </div>
@@ -363,7 +309,7 @@ export function ManagerTaskDetail(): JSX.Element {
             {/* Comments Thread with Add Comment */}
             <div style={{ background: '#FFFFFF', padding: '20px', borderRadius: '12px', border: '1px solid var(--border)' }}>
               <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '14px' }}>
-                Comments ({task.comments?.length || 2})
+                Comments ({task.comments?.length || 0})
               </h3>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '16px' }}>
@@ -413,6 +359,7 @@ export function ManagerTaskDetail(): JSX.Element {
             </div>
           </div>
         </div>
+        {editingTask && <EditTaskModal task={task} onClose={() => setEditingTask(false)} />}
       </PageContainer>
     </AppLayout>
   );
