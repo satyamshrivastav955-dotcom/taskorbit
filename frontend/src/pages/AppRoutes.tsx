@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 const Login = lazy(() => import('./auth/Login').then((module) => ({ default: module.Login })));
 const Register = lazy(() => import('./auth/Register').then((module) => ({ default: module.Register })));
+const Landing = lazy(() => import('./Landing').then((module) => ({ default: module.Landing })));
 const UiPreview = lazy(() => import('./UiPreview').then((module) => ({ default: module.UiPreview })));
 
 const ClientOverview = lazy(() => import('./client/Overview').then((module) => ({ default: module.ClientOverview })));
@@ -53,13 +54,7 @@ function RouteFallback(): JSX.Element {
 function HomeRedirect(): JSX.Element {
   const session = useAppSelector((s) => s.session);
   if (!session.ready) return <p style={{ padding: '24px' }}>Loading workspace…</p>;
-  if (session.uid !== '' && session.role !== '') {
-    if (session.role === 'client') return <Navigate to="/client" replace />;
-    if (session.role === 'manager') return <Navigate to="/manager" replace />;
-    if (session.role === 'assignee') return <Navigate to="/assignee" replace />;
-    if (session.role === 'reviewer') return <Navigate to="/reviewer" replace />;
-  }
-  return <Navigate to="/login" replace />;
+  return <Landing />;
 }
 
 export function AppRoutes(): JSX.Element {
@@ -69,6 +64,7 @@ export function AppRoutes(): JSX.Element {
       {/* Public / Auth */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/landing" element={<Landing />} />
       <Route path="/ui-preview" element={<UiPreview />} />
 
       {/* Shared Pages for all authenticated users */}
