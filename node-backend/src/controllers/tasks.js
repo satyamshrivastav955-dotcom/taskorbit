@@ -1,271 +1,160 @@
 const { db } = require('../config/firebase');
-const { findConflicts, overlapRange } = require('../services/conflictService');
-const { err } = require('../middleware/auth');
+const { findConflicts } = require('../services/conflictService');
+const { assert, fail, text, day, fields, rows, json, activity, notify } = require('../services/common');
+const { verifyFiles } = require('../services/files');
+const ALLOWED = { todo: ['in_progress'], in_progress: ['submitted'], submitted: ['in_review'], in_review: ['approved', 'revision'], revision: ['in_progress'], approved: [] };
+const canTransition = (from, to) => (ALLOWED[from] || []).includes(to);
+const editFields = ['title', 'description', 'assigneeId', 'reviewerId', 'startDate', 'deadline', 'priority', 'labels', 'requirementIds', 'subtaskTitles', 'estimatedHours'];
 
-function toDate(v) {
-  return v instanceof Date ? v : new Date(v);
-}
-
-async function logActivity(projectId, actorId, actorName, action, targetType, targetId) {
-  await db().collection('activityLogs').add({
-    projectId, actorId, actorName, action, targetType, targetId, createdAt: new Date(),
-  });
-}
-
-async function notify(userId, message, type, link) {
-  await db().collection('notifications').add({
-    userId, message, type, link, read: false, createdAt: new Date(),
-  });
-}
-
-async function existingForAssignee(assigneeId) {
-  const snap = await db().collection('tasks').where('assigneeId', '==', assigneeId).get();
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-}
-
-async function syncConflictSides(taskId) {
-  const snap = await db().collection('tasks').doc(taskId).get();
-  if (!snap.exists) return;
-  const task = { id: snap.id, ...snap.data() };
-  const others = await existingForAssignee(task.assigneeId);
-  const conflicts = findConflicts(task, others);
-  await db().collection('tasks').doc(taskId).update({ conflictWith: conflicts, updatedAt: new Date() });
-  for (const otherId of conflicts) {
-    const oSnap = await db().collection('tasks').doc(otherId).get();
-    if (!oSnap.exists) continue;
-    const oData = oSnap.data();
-    const list = new Set(oData.conflictWith || []);
-    list.add(taskId);
-    await db().collection('tasks').doc(otherId).update({ conflictWith: [...list] });
+async function mutate(req, operation) {
+  const fs = db();
+  const ref = operation === 'create' ? fs.collection('tasks').doc() : fs.collection('tasks').doc(req.params.id);
+  const body = req.body || {};
+  if (operation === 'create') {
+    fields(body, [...editFields, 'force']);
+    if (body.force !== undefined) assert(typeof body.force === 'boolean', 'force must be a boolean');
   }
-}
+  if (operation === 'update') fields(body, editFields);
+   if (operation === 'reassign') fields(body, ['assigneeId']);
+   if (operation === 'submit') fields(body, ['files', 'note']);
+   if (operation === 'review') fields(body, ['decision', 'comments', 'submissionId']);
+  const files = operation === 'submit' ? await verifyFiles(body.files, req.user, 'submission', ref.id) : [];
+  return fs.runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    if (operation !== 'create' && !snap.exists) fail(404, 'not-found', 'Task not found');
+    const current = snap.exists ? { ...snap.data(), id: ref.id } : null;
+    const projectId = current?.projectId || req.params.projectId;
+    const projectRef = fs.collection('projects').doc(projectId);
+    const ps = await tx.get(projectRef);
+    if (!ps.exists) fail(404, 'not-found', 'Project not found');
+    const project = ps.data();
+    const next = current ? { ...current } : { id: ref.id, projectId, status: 'todo', conflictWith: [], revisionCount: 0, submissionCount: 0, createdAt: new Date() };
+    if (['create', 'update', 'reassign'].includes(operation)) {
+      if (current) assert(!['submitted', 'in_review', 'approved'].includes(current.status), 'Submitted or approved work cannot be edited', 409);
+       for (const key of editFields) if (body[key] !== undefined) next[key] = body[key];
+      next.title = text(next.title, 'Title', 200, true);
+      next.description = text(next.description === undefined ? '' : next.description, 'Description');
+      next.startDate = day(next.startDate); next.deadline = day(next.deadline);
+       assert(next.deadline >= next.startDate, 'Deadline must be on or after start date');
+       assert(next.startDate >= day(project.startDate) && next.deadline <= day(project.deadline), 'Task dates must fit inside the project schedule');
+      assert(['low', 'medium', 'high'].includes(next.priority || 'medium'), 'Invalid priority');
+      next.priority ||= 'medium';
+       text(next.assigneeId, 'Assignee', 128, true); text(next.reviewerId, 'Reviewer', 128, true);
+       if (body.labels !== undefined) { assert(Array.isArray(body.labels) && body.labels.length <= 12, 'Use no more than 12 labels'); next.labels = body.labels.map(label => text(label, 'Label', 40, true)); }
+       if (body.estimatedHours !== undefined) assert(Number.isFinite(body.estimatedHours) && body.estimatedHours >= 0 && body.estimatedHours <= 10000, 'Invalid estimated hours');
+       if (body.subtaskTitles !== undefined) {
+         assert(Array.isArray(body.subtaskTitles) && body.subtaskTitles.length <= 50, 'Use no more than 50 checklist items');
+         next.subtasks = body.subtaskTitles.map(title => ({id:fs.collection('tasks').doc().id, title:text(title,'Checklist title',200,true), completed:false}));
+         delete next.subtaskTitles;
+       }
+       if (body.requirementIds !== undefined) {
+         assert(Array.isArray(body.requirementIds) && body.requirementIds.length <= 50, 'Invalid requirement selection');
+         next.requirementIds = body.requirementIds.map(id => text(id,'Requirement ID',128,true));
+         for (const id of next.requirementIds) {
+           const requirement = await tx.get(fs.collection('requirements').doc(id));
+           assert(requirement.exists && requirement.data().projectId === projectId, 'Choose requirements from this project');
+         }
+       }
+    }
+    if (['start', 'submit'].includes(operation)) assert(current.assigneeId === req.user.uid, 'This task is assigned to another person', 403);
+    if (['open', 'review'].includes(operation)) assert(current.reviewerId === req.user.uid, 'This review is assigned to another person', 403);
+    if (operation === 'start') next.status = 'in_progress';
+    if (operation === 'submit') next.status = 'submitted';
+    if (operation === 'open') next.status = 'in_review';
+     if (operation === 'review') {
+      assert(['approved', 'rejected'].includes(body.decision), 'Decision must be approved or rejected');
+      const comments = body.comments === undefined ? '' : body.comments;
+      text(comments, 'Comments', 10000, body.decision === 'rejected');
+      next.status = body.decision === 'approved' ? 'approved' : 'revision';
+      if (next.status === 'revision') next.revisionCount++;
+    }
+    if (['start', 'submit', 'open', 'review'].includes(operation)) {
+      if (operation === 'open' && current.status === 'in_review') return { ok: true };
+      assert(canTransition(current.status, next.status), 'Cannot move ' + current.status + ' to ' + next.status, 409);
+    }
+    if (operation === 'delete') assert(current.status === 'todo', 'Only an unstarted task can be deleted', 409);
 
-async function removeFromOthers(taskId) {
-  const snap = await db().collection('tasks').where('conflictWith', 'array-contains', taskId).get();
-  for (const d of snap.docs) {
-    const list = (d.data().conflictWith || []).filter((x) => x !== taskId);
-    await d.ref.update({ conflictWith: list });
-  }
-}
-
-async function maybeCompleteProject(projectId) {
-  const snap = await db().collection('tasks').where('projectId', '==', projectId).get();
-  if (snap.empty) return;
-  const all = snap.docs.map((d) => d.data());
-  if (all.every((t) => t.status === 'approved')) {
-    await db().collection('projects').doc(projectId).update({ status: 'completed' });
-  }
-}
-
-const ALLOWED = {
-  todo: ['in_progress'],
-  in_progress: ['submitted'],
-  submitted: ['in_review'],
-  in_review: ['approved', 'revision'],
-  revision: ['in_progress'],
-  approved: [],
-};
-
-function canTransition(from, to) {
-  return (ALLOWED[from] || []).includes(to);
-}
-
-async function createTask(req, res) {
-  const { projectId } = req.params;
-  const { title, description = '', assigneeId, reviewerId, startDate, deadline, priority = 'medium', force = false } = req.body || {};
-  if (!title || !assigneeId || !reviewerId || !startDate || !deadline) {
-    return err(res, 400, 'invalid-argument', 'title, assigneeId, reviewerId, startDate, deadline are required');
-  }
-  if (toDate(deadline) < toDate(startDate)) return err(res, 400, 'invalid-argument', 'deadline must be on or after startDate');
-  const candidate = { id: 'new', assigneeId, status: 'todo', startDate, deadline };
-  const others = await existingForAssignee(assigneeId);
-  const conflicts = findConflicts(candidate, others);
-  if (conflicts.length > 0 && !force) {
-    const details = [];
-    for (const cid of conflicts) {
-      const s = await db().collection('tasks').doc(cid).get();
-      if (s.exists) {
-        const d = s.data();
-        details.push({ id: cid, title: d.title, startDate: d.startDate, deadline: d.deadline });
+    // Shared assignee and project documents serialize concurrent scheduling,
+    // including simultaneous creates into an initially empty schedule.
+    const assigneeIds = [...new Set([current?.assigneeId, next.assigneeId].filter(Boolean))];
+    const people = new Map();
+    for (const uid of [...new Set([...assigneeIds, next.reviewerId])]) people.set(uid, await tx.get(fs.collection('users').doc(uid)));
+    assert(people.get(next.assigneeId)?.data()?.role === 'assignee', 'Select a valid assignee');
+    assert(people.get(next.reviewerId)?.data()?.role === 'reviewer', 'Select a valid reviewer');
+    const pool = new Map();
+    for (const uid of assigneeIds) for (const t of rows(await tx.get(fs.collection('tasks').where('assigneeId', '==', uid)))) pool.set(t.id, t);
+    const projectTasks = rows(await tx.get(fs.collection('tasks').where('projectId', '==', projectId)));
+    let latest;
+    if (operation === 'review') {
+      assert(current.latestSubmissionId, 'No submission is available for review', 409);
+      latest = await tx.get(fs.collection('submissions').doc(current.latestSubmissionId));
+       assert(latest.exists, 'Submission not found', 409);
+       if (body.submissionId !== undefined) assert(body.submissionId === latest.id, 'The submission changed. Reload before reviewing.', 409);
+    }
+     next.updatedAt = new Date();
+     if (operation === 'delete') pool.delete(ref.id); else pool.set(ref.id, next);
+     if (operation === 'create' && !body.force) {
+       const candidateConflicts = findConflicts(next, [...pool.values()]).sort();
+       if (candidateConflicts.length) {
+         return {
+           ok: true,
+           task: null,
+           conflicts: candidateConflicts,
+           conflictTasks: [...pool.values()].filter(t => candidateConflicts.includes(t.id)),
+         };
+       }
+     }
+     const audience = [project.clientId, project.managerId, next.assigneeId, next.reviewerId].filter(Boolean);
+    const internalAudience = audience.filter(id => id !== project.clientId);
+    for (const uid of assigneeIds) tx.update(people.get(uid).ref, { schedulingRevision: (people.get(uid).data().schedulingRevision || 0) + 1 });
+    for (const t of pool.values()) {
+      const conflicts = findConflicts(t, [...pool.values()]).sort();
+      const added = conflicts.filter(id => !(t.conflictWith || []).includes(id));
+      if (t.id === ref.id) next.conflictWith = conflicts;
+      else if (JSON.stringify(conflicts) !== JSON.stringify([...(t.conflictWith || [])].sort())) tx.update(fs.collection('tasks').doc(t.id), { conflictWith: conflicts, updatedAt: new Date() });
+      if (added.length) {
+        notify(tx, project.managerId || req.user.uid, 'Deadline conflict: ' + t.title, 'conflict', '/manager/conflicts');
+        activity(tx, req.user, t.projectId, 'conflict detected', 'task', t.id, internalAudience);
       }
     }
-    return res.status(200).json({ task: null, conflicts: details });
-  }
-  const ref = await db().collection('tasks').add({
-    projectId, title, description, assigneeId, reviewerId,
-    startDate: toDate(startDate), deadline: toDate(deadline), priority,
-    status: 'todo', conflictWith: [], revisionCount: 0, createdAt: new Date(), updatedAt: new Date(),
-  });
-  await syncConflictSides(ref.id);
-  await logActivity(projectId, req.user.uid, req.user.email, `created task '${title}'`, 'task', ref.id);
-  await notify(assigneeId, `You were assigned '${title}'`, 'assigned', `/assignee/tasks/${ref.id}`);
-  if (conflicts.length > 0) await notify(req.user.uid, `Conflict detected for '${title}'`, 'conflict', '/manager/conflicts');
-  const snap = await ref.get();
-  return res.status(201).json({ task: { id: snap.id, ...snap.data() }, conflicts });
-}
-
-async function updateTask(req, res) {
-  const { id } = req.params;
-  const patch = req.body || {};
-  const ref = db().collection('tasks').doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return err(res, 404, 'not-found', 'Task not found');
-  const current = snap.data();
-  if (patch.status !== undefined && patch.status !== current.status) {
-    return err(res, 409, 'invalid-transition', 'Use state machine endpoints for status changes');
-  }
-  const next = { ...current, ...patch };
-  if (patch.startDate !== undefined) next.startDate = toDate(patch.startDate);
-  if (patch.deadline !== undefined) next.deadline = toDate(patch.deadline);
-  await ref.update({ ...patch, updatedAt: new Date() });
-  if (patch.startDate !== undefined || patch.deadline !== undefined || patch.assigneeId !== undefined) {
-    await syncConflictSides(id);
-  }
-  await logActivity(current.projectId, req.user.uid, req.user.email, 'updated task', 'task', id);
-  return res.json({ ok: true });
-}
-
-async function reassign(req, res) {
-  const { id } = req.params;
-  const { assigneeId } = req.body || {};
-  if (!assigneeId) return err(res, 400, 'invalid-argument', 'assigneeId required');
-  const ref = db().collection('tasks').doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return err(res, 404, 'not-found', 'Task not found');
-  const current = snap.data();
-  await removeFromOthers(id);
-  await ref.update({ assigneeId, updatedAt: new Date() });
-  await syncConflictSides(id);
-  await logActivity(current.projectId, req.user.uid, req.user.email, 'reassigned task', 'task', id);
-  await notify(assigneeId, `You were assigned '${current.title}'`, 'assigned', `/assignee/tasks/${id}`);
-  return res.json({ ok: true });
-}
-
-async function deleteTask(req, res) {
-  const { id } = req.params;
-  const snap = await db().collection('tasks').doc(id).get();
-  if (!snap.exists) return err(res, 404, 'not-found', 'Task not found');
-  const projectId = snap.data().projectId;
-  await removeFromOthers(id);
-  await db().collection('tasks').doc(id).delete();
-  await logActivity(projectId, req.user.uid, req.user.email, 'deleted task', 'task', id);
-  return res.json({ ok: true });
-}
-
-async function startTask(req, res) {
-  const { id } = req.params;
-  const ref = db().collection('tasks').doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return err(res, 404, 'not-found', 'Task not found');
-  const t = snap.data();
-  if (t.assigneeId !== req.user.uid) return err(res, 403, 'forbidden', 'Not your task');
-  if (!canTransition(t.status, 'in_progress')) return err(res, 409, 'invalid-transition', `Cannot move ${t.status} to in_progress`);
-  await ref.update({ status: 'in_progress', updatedAt: new Date() });
-  await logActivity(t.projectId, req.user.uid, req.user.email, `started task '${t.title}'`, 'task', id);
-  return res.json({ ok: true });
-}
-
-async function submitTask(req, res) {
-  const { id } = req.params;
-  const { fileUrl, fileName, note = '' } = req.body || {};
-  if (!fileUrl || !fileName) return err(res, 400, 'invalid-argument', 'fileUrl and fileName required');
-  const ref = db().collection('tasks').doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return err(res, 404, 'not-found', 'Task not found');
-  const t = snap.data();
-  if (t.assigneeId !== req.user.uid) return err(res, 403, 'forbidden', 'Not your task');
-  if (!canTransition(t.status, 'submitted')) return err(res, 409, 'invalid-transition', `Cannot move ${t.status} to submitted`);
-  const prev = await db().collection('submissions').where('taskId', '==', id).get();
-  const version = prev.size + 1;
-  const sub = await db().collection('submissions').add({
-    taskId: id, submittedBy: req.user.uid, fileUrl, fileName, note, version, submittedAt: new Date(),
-  });
-  await ref.update({ status: 'submitted', updatedAt: new Date() });
-  await logActivity(t.projectId, req.user.uid, req.user.email, `submitted task '${t.title}'`, 'submission', sub.id);
-  await notify(t.reviewerId, `Submission received for '${t.title}'`, 'submission', `/reviewer/${id}`);
-  return res.status(201).json({ submissionId: sub.id, version });
-}
-
-async function openReview(req, res) {
-  const { id } = req.params;
-  const ref = db().collection('tasks').doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return err(res, 404, 'not-found', 'Task not found');
-  const t = snap.data();
-  if (t.reviewerId !== req.user.uid) return err(res, 403, 'forbidden', 'Not your review');
-  if (!canTransition(t.status, 'in_review')) {
-    if (t.status === 'in_review') return res.json({ ok: true });
-    return err(res, 409, 'invalid-transition', `Cannot move ${t.status} to in_review`);
-  }
-  await ref.update({ status: 'in_review', updatedAt: new Date() });
-  return res.json({ ok: true });
-}
-
-async function reviewTask(req, res) {
-  const { id } = req.params;
-  const { decision, comments = '' } = req.body || {};
-  if (decision !== 'approved' && decision !== 'rejected') return err(res, 400, 'invalid-argument', 'decision must be approved or rejected');
-  if (decision === 'rejected' && comments.trim() === '') return err(res, 400, 'invalid-argument', 'comments required on rejection');
-  const ref = db().collection('tasks').doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return err(res, 404, 'not-found', 'Task not found');
-  const t = snap.data();
-  if (t.reviewerId !== req.user.uid) return err(res, 403, 'forbidden', 'Not your review');
-  const next = decision === 'approved' ? 'approved' : 'revision';
-  if (!canTransition(t.status, next)) return err(res, 409, 'invalid-transition', `Cannot move ${t.status} to ${next}`);
-  const subs = await db().collection('submissions').where('taskId', '==', id).get();
-  const latest = subs.docs.sort((a, b) => (b.data().version || 0) - (a.data().version || 0))[0];
-  await db().collection('reviews').add({
-    taskId: id, submissionId: latest ? latest.id : '', reviewerId: req.user.uid, decision, comments, createdAt: new Date(),
-  });
-  const patch = { status: next, updatedAt: new Date() };
-  if (next === 'revision') patch.revisionCount = (t.revisionCount || 0) + 1;
-  if (next === 'approved') patch.conflictWith = [];
-  await ref.update(patch);
-  if (next === 'approved') {
-    await removeFromOthers(id);
-    await maybeCompleteProject(t.projectId);
-    await logActivity(t.projectId, req.user.uid, req.user.email, `approved task '${t.title}'`, 'task', id);
-    await notify(t.assigneeId, `Your work on '${t.title}' was approved`, 'submission', `/assignee/tasks/${id}`);
-  } else {
-    await logActivity(t.projectId, req.user.uid, req.user.email, `requested revision on '${t.title}'`, 'task', id);
-    await notify(t.assigneeId, `Revision requested on '${t.title}'`, 'revision', `/assignee/tasks/${id}`);
-  }
-  return res.json({ ok: true });
-}
-
-async function listConflicts(req, res) {
-  const snap = await db().collection('tasks').get();
-  const tasks = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  const active = tasks.filter((t) => t.status !== 'approved' && (t.conflictWith || []).length > 0);
-  const byId = new Map(tasks.map((t) => [t.id, t]));
-  const seen = new Set();
-  const out = [];
-  for (const t of active) {
-    for (const otherId of t.conflictWith || []) {
-      const key = [t.id, otherId].sort().join('|');
-      if (seen.has(key)) continue;
-      seen.add(key);
-      const o = byId.get(otherId);
-      if (!o) continue;
-      const r = overlapRange(t, o);
-      out.push({
-        assigneeId: t.assigneeId,
-        taskA: { id: t.id, title: t.title, startDate: t.startDate, deadline: t.deadline },
-        taskB: { id: otherId, title: o.title, startDate: o.startDate, deadline: o.deadline },
-        overlap: { start: r.start, end: r.end },
-      });
+    if (operation === 'submit') {
+      const subRef = fs.collection('submissions').doc();
+      next.submissionCount = (current.submissionCount || 0) + 1;
+      next.latestSubmissionId = subRef.id;
+      tx.set(subRef, { taskId: ref.id, projectId, submittedBy: req.user.uid, files, fileName: files[0].name, fileUrl: files[0].url, note: text(body.note === undefined ? '' : body.note, 'Note'), version: next.submissionCount, submittedAt: new Date() });
+      activity(tx, req.user, projectId, 'submission uploaded', 'submission', subRef.id, internalAudience);
+      notify(tx, next.reviewerId, 'Review required: ' + next.title, 'submission', '/reviewer/reviews/' + ref.id);
+      notify(tx, project.managerId, 'Work submitted: ' + next.title, 'submission', '/manager/tasks/' + ref.id);
     }
-  }
-  const grouped = {};
-  for (const c of out) {
-    grouped[c.assigneeId] = grouped[c.assigneeId] || [];
-    grouped[c.assigneeId].push(c);
-  }
-  return res.json({ conflicts: out, grouped });
+    if (operation === 'review') {
+      const reviewRef = fs.collection('reviews').doc();
+      tx.set(reviewRef, { taskId: ref.id, projectId, submissionId: latest.id, reviewerId: req.user.uid, decision: body.decision, comments: (body.comments === undefined ? '' : body.comments).trim(), createdAt: new Date() });
+      activity(tx, req.user, projectId, 'review completed', 'review', reviewRef.id, internalAudience);
+       notify(tx, next.assigneeId, (next.status === 'approved' ? 'Approved: ' : 'Revision requested: ') + next.title, next.status === 'approved' ? 'approval' : 'revision', '/assignee/tasks/' + ref.id);
+     }
+     if (operation === 'start') notify(tx, project.managerId, 'Work started: ' + next.title, 'status_change', '/manager/tasks/' + ref.id);
+     if (operation === 'open') notify(tx, project.managerId, 'Review opened: ' + next.title, 'submission', '/manager/tasks/' + ref.id);
+    if (operation === 'create' || current?.assigneeId !== next.assigneeId) {
+      notify(tx, next.assigneeId, (operation === 'create' ? 'Assigned: ' : 'Reassigned: ') + next.title, 'assigned', '/assignee/tasks/' + ref.id);
+      if (current) notify(tx, current.assigneeId, 'Task reassigned: ' + next.title, 'assigned', '/assignee/tasks');
+      activity(tx, req.user, projectId, operation === 'create' ? 'task assigned' : 'task reassigned', 'task', ref.id, internalAudience);
+    }
+    if (current && (body.startDate !== undefined || body.deadline !== undefined)) activity(tx, req.user, projectId, 'deadline changed', 'task', ref.id, internalAudience);
+    const actions = { create: 'task created', update: 'task updated', reassign: 'assignment updated', delete: 'task deleted', start: 'task started', submit: 'task submitted', open: 'review started', review: next.status === 'approved' ? 'task approved' : 'revision requested' };
+    activity(tx, req.user, projectId, actions[operation], 'task', ref.id, internalAudience);
+    if (operation === 'delete') tx.delete(ref); else { const { id, ...data } = next; tx.set(ref, data); }
+    const remaining = projectTasks.filter(t => t.id !== ref.id);
+    if (operation !== 'delete') remaining.push(next);
+    const completed = remaining.filter(t => t.status === 'approved').length;
+    const status = remaining.length && completed === remaining.length ? 'completed' : remaining.length ? 'active' : 'submitted';
+    tx.update(projectRef, { status, managerId: project.managerId || (req.user.role === 'manager' ? req.user.uid : null), memberIds: [...new Set(remaining.flatMap(t => [t.assigneeId, t.reviewerId]))], totalTasks: remaining.length, tasksCompleted: completed, progress: remaining.length ? Math.round(100 * completed / remaining.length) : 0, updatedAt: new Date() });
+    if (status === 'completed' && project.status !== status) {
+      notify(tx, project.clientId, 'Project completed: ' + project.title, 'approval', '/client/projects/' + projectId);
+      activity(tx, req.user, projectId, 'project completed', 'project', projectId, audience);
+    }
+    return { ok: true, task: next, conflicts: next.conflictWith, submissionId: next.latestSubmissionId || null, version: next.submissionCount || 0 };
+  });
 }
-
-module.exports = {
-  createTask, updateTask, reassign, deleteTask, startTask, submitTask,
-  openReview, reviewTask, listConflicts, canTransition, logActivity, notify,
-};
+const handler = operation => async (req, res) => res.status(['create', 'submit'].includes(operation) ? 201 : 200).json(json(await mutate(req, operation)));
+async function listConflicts(req, res) { res.json(json(rows(await db().collection('tasks').get()).filter(t => t.status !== 'approved' && t.conflictWith?.length))); }
+module.exports = { createTask: handler('create'), updateTask: handler('update'), reassign: handler('reassign'), deleteTask: handler('delete'), startTask: handler('start'), submitTask: handler('submit'), openReview: handler('open'), reviewTask: handler('review'), listConflicts, canTransition };

@@ -9,11 +9,12 @@ function toDay(value) {
   } else {
     d = new Date(value);
   }
-  d.setHours(0, 0, 0, 0);
+  d.setUTCHours(0, 0, 0, 0);
   return d.getTime();
 }
 
 function findConflicts(candidateTask, existingTasks) {
+  if (candidateTask.status === 'approved') return [];
   const cStart = toDay(candidateTask.startDate);
   const cEnd = toDay(candidateTask.deadline);
   const out = [];

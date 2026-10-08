@@ -9,8 +9,13 @@ async function verifyToken(req, res, next) {
   const token = header.startsWith('Bearer ') ? header.slice(7) : '';
   if (token === '') return err(res, 401, 'unauthenticated', 'Missing ID token');
   try {
-    const decoded = await getAdmin().auth().verifyIdToken(token);
-    req.user = { uid: decoded.uid, role: decoded.role || '', email: decoded.email || '' };
+    const decoded = await getAdmin().auth().verifyIdToken(token, true);
+    req.user = {
+      uid: decoded.uid,
+      role: decoded.role || '',
+      email: decoded.email || '',
+      name: decoded.name || decoded.email || '',
+    };
     return next();
   } catch {
     return err(res, 401, 'unauthenticated', 'Invalid ID token');

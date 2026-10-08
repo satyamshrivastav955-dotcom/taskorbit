@@ -1,21 +1,40 @@
-const express = require('express');
-const { verifyToken, requireRole } = require('../middleware/auth');
-const tasks = require('../controllers/tasks');
-const exp = require('../controllers/export');
-
-const router = express.Router();
+const express=require('express');
+const {verifyToken,requireRole}=require('../middleware/auth');
+const tasks=require('../controllers/tasks'),projects=require('../controllers/projects'),exp=require('../controllers/export');
+const {workspace}=require('../controllers/workspace');
+const {removeNotification}=require('../controllers/activity');
+const {log}=require('../controllers/activity');
+const auth=require('../controllers/auth');
+const collaboration=require('../controllers/collaboration');
+const router=express.Router();
+const wrap=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
+router.post('/auth/register',wrap(auth.register));
 router.use(verifyToken);
-
-router.post('/projects/:projectId/tasks', requireRole('manager'), tasks.createTask);
-router.put('/tasks/:id', requireRole('manager'), tasks.updateTask);
-router.post('/tasks/:id/reassign', requireRole('manager'), tasks.reassign);
-router.delete('/tasks/:id', requireRole('manager'), tasks.deleteTask);
-router.post('/tasks/:id/start', requireRole('assignee'), tasks.startTask);
-router.post('/tasks/:id/submit', requireRole('assignee'), tasks.submitTask);
-router.post('/tasks/:id/open-review', requireRole('reviewer'), tasks.openReview);
-router.post('/tasks/:id/review', requireRole('reviewer'), tasks.reviewTask);
-router.get('/conflicts', requireRole('manager'), tasks.listConflicts);
-router.get('/export/report/:projectId', requireRole('manager'), exp.report);
-router.get('/export/all', requireRole('manager'), exp.exportAll);
-
-module.exports = router;
+// A first-time Google user has no role claim yet. Let the provisioning
+// endpoint establish the selected workspace role before the role gate.
+router.post('/auth/google',wrap(auth.ensureGoogleUser));
+router.use(requireRole('client','manager','assignee','reviewer'));
+router.get('/workspace',wrap(workspace));
+router.post('/users',requireRole('manager'),wrap(auth.register));
+router.post('/activity',wrap(log));
+router.post('/projects',requireRole('client'),wrap(projects.create));
+router.put('/projects/:id',requireRole('client','manager'),wrap(projects.update));
+router.post('/projects/:id/requirements',requireRole('client'),wrap(projects.requirement));
+router.post('/projects/:id/documents',requireRole('client'),wrap(projects.document));
+router.post('/projects/:id/feedback',requireRole('client'),wrap(projects.feedback));
+router.delete('/notifications/:id',wrap(removeNotification));
+router.post('/projects/:projectId/tasks',requireRole('manager'),wrap(tasks.createTask));
+router.put('/tasks/:id',requireRole('manager'),wrap(tasks.updateTask));
+router.post('/tasks/:id/reassign',requireRole('manager'),wrap(tasks.reassign));
+router.delete('/tasks/:id',requireRole('manager'),wrap(tasks.deleteTask));
+router.post('/tasks/:id/start',requireRole('assignee'),wrap(tasks.startTask));
+router.post('/tasks/:id/submit',requireRole('assignee'),wrap(tasks.submitTask));
+router.post('/tasks/:id/open-review',requireRole('reviewer'),wrap(tasks.openReview));
+router.post('/tasks/:id/review',requireRole('reviewer'),wrap(tasks.reviewTask));
+router.post('/tasks/:id/comments',wrap(collaboration.comment));
+router.put('/tasks/:id/checklist/:subtaskId',wrap(collaboration.checklist));
+router.put('/feedback/:id',requireRole('manager'),wrap(collaboration.feedbackUpdate));
+router.get('/conflicts',requireRole('manager'),wrap(tasks.listConflicts));
+router.get('/export/report/:projectId',requireRole('manager'),wrap(exp.report));
+router.get('/export/all',requireRole('manager'),wrap(exp.exportAll));
+module.exports=router;

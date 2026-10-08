@@ -65,6 +65,32 @@ async function main() {
     created.push(ref.id);
   }
 
+  // Seed reviewable states with actual Storage-backed deliverables so the
+  // reviewer and resubmission journeys are usable immediately after seeding.
+  const bucket = admin.storage().bucket();
+  for (let i = 0; i < created.length; i++) {
+    if (!['submitted', 'in_review', 'revision', 'approved'].includes(statuses[i])) continue;
+    const taskRef = fs.collection('tasks').doc(created[i]);
+    const taskSnap = await taskRef.get();
+    const task = taskSnap.data();
+    const storagePath = `projects/${proj.id}/submissions/${created[i]}/seed-deliverable.txt`;
+    const token = require('crypto').randomUUID();
+    const content = Buffer.from(`TaskOrbit seeded deliverable for ${task.title}\n`);
+    await bucket.file(storagePath).save(content, {
+      metadata: { contentType: 'text/plain', metadata: { ownerId: task.assigneeId, firebaseStorageDownloadTokens: token } },
+    });
+    const fileUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(storagePath)}?alt=media&token=${token}`;
+    const submission = await fs.collection('submissions').add({
+      taskId: created[i], projectId: proj.id, submittedBy: task.assigneeId,
+      files: [{ id: storagePath, name: 'seed-deliverable.txt', storagePath, size: content.length, type: 'text/plain', uploadedBy: task.assigneeId, uploadedAt: new Date(), url: fileUrl }],
+      fileName: 'seed-deliverable.txt', fileUrl, note: 'Seeded deliverable for workflow verification.', version: 1, submittedAt: new Date(),
+    });
+    await taskRef.update({ latestSubmissionId: submission.id, submissionCount: 1 });
+    if (['revision', 'approved'].includes(statuses[i])) {
+      await fs.collection('reviews').add({ taskId: created[i], projectId: proj.id, submissionId: submission.id, reviewerId: task.reviewerId, decision: statuses[i] === 'approved' ? 'approved' : 'rejected', comments: statuses[i] === 'approved' ? 'Seeded deliverable approved.' : 'Please address the seeded review comments and resubmit.', createdAt: new Date() });
+    }
+  }
+
   // Intentional conflict: tasks 0 and 1 share assignee + overlapping dates.
   const { findConflicts } = require('../src/services/conflictService');
   const allTasks = [];
