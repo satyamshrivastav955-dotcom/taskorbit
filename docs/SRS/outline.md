@@ -16,7 +16,7 @@ In scope: auth + roles, projects, requirements + file attach, tasks,
 conflict detection, submissions (versioned), reviews, notifications,
 activity log, progress auto-completion, manager reports, hand-built timeline,
 MySQL sync + Spring Boot analytics + JSP printable report + Laravel notes.
-Out of scope: self-registration, payments, chat, Gantt drag-and-drop, mobile app.
+Out of scope: payments, chat, Gantt drag-and-drop, mobile app.
 
 ## 3. Roles
 

@@ -1,6 +1,10 @@
 {
   "info": { "name": "TaskOrbit Express API", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
   "item": [
+    { "name": "register", "request": { "method": "POST", "url": "{{base}}/auth/register", "body": { "mode": "raw", "raw": "{\"name\":\"Test User\",\"email\":\"test@taskorbit.local\",\"password\":\"Test123!\",\"role\":\"manager\"}" } } },
+    { "name": "google-provision", "request": { "method": "POST", "url": "{{base}}/auth/google" } },
+    { "name": "activity", "request": { "method": "POST", "url": "{{base}}/activity", "body": { "mode": "raw", "raw": "{\"projectId\":\"PID\",\"action\":\"created project\",\"targetType\":\"project\",\"targetId\":\"PID\"}" } } },
+    { "name": "delete notification", "request": { "method": "DELETE", "url": "{{base}}/notifications/:id" } },
     { "name": "health", "request": { "method": "GET", "url": "{{base}}/health" } },
     { "name": "create task", "request": { "method": "POST", "url": "{{base}}/projects/:id/tasks", "body": { "mode": "raw", "raw": "{\"title\":\"Set up staging environment\",\"assigneeId\":\"UID\",\"reviewerId\":\"UID\",\"startDate\":\"2026-10-01\",\"deadline\":\"2026-10-05\",\"priority\":\"medium\"}" } } },
     { "name": "update task", "request": { "method": "PUT", "url": "{{base}}/tasks/:id" } },

@@ -1,4 +1,19 @@
-# TaskOrbit — UI RULES (frozen in Phase 0)
+# TaskOrbit — Product design rules
+
+## Current product-quality direction (2026-10-07)
+
+The current product pass supersedes conflicting Phase 0 restrictions below:
+Inter typography, Lucide icons, calm ink/cloud surfaces, a restrained orbit accent,
+layered but subtle depth, and fast purposeful motion with reduced-motion support.
+Overview screens prioritize actionable queues, project delivery, and activity;
+no fabricated sparklines, arbitrary workload percentages, or decorative charts.
+Every visible section must be connected to real application records, and every
+control must have a meaningful outcome. Test fixtures live outside the product
+entry points. Mobile navigation, keyboard operation, dialog focus, and loading,
+empty, error, and success feedback are part of the visual quality standard.
+
+The earlier phase rules below are retained for design history and any guidance
+that does not conflict with this current direction.
 
 Target feel: Linear / Jira / GitHub / Stripe Dashboard. Quiet, dense, functional
 work tool. Not a landing page, not a template. Approved in Phase 1 via `/ui-preview`
@@ -11,6 +26,9 @@ before any page exists.
 - No hero banners, decorative blobs, stock illustrations.
 - No `Welcome back, <name>` greetings. Plain page titles like `Overview`.
 - No purple/indigo primary. No rainbow stat cards.
+  (APPROVED OVERRIDE — auth + shared system screens only: `--indigo-700/600/500/100`
+  for primary actions, active nav, focus and progress accents, per the approved
+  reference images. Role feature pages keep the original palette.)
 - No big shadows. Cards are flat: white, 1px border, 8px radius.
   A 1-2px subtle shadow only on popovers and modals.
 - No hover animations that move or scale. Only 120ms background-color transitions.

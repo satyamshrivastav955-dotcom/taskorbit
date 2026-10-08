@@ -31,3 +31,7 @@ and one task in every status.
 `docs/diagrams/architecture.md` + `docs/diagrams/workflow.md`.
 Frontend (role shells) -> Firebase Auth (custom claims) -> Firestore/Storage
 -> Express (state machine + conflicts + export) -> MySQL -> Spring/JSP/Laravel (read-only).
+
+Public sign-up lets a user choose a workspace role: client, manager, assignee,
+or reviewer. The authenticated manager Team flow remains limited to provisioning
+assignee and reviewer accounts.

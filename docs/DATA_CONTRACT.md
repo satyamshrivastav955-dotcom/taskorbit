@@ -23,6 +23,22 @@ MySQL mirror lands in Phase 9 (`db/schema.sql`).
 
 Role is also set as a Firebase Auth custom claim. Frontend checks are UX only.
 
+### userSettings/{uid} (NEW — approved auth/system design pass)
+
+Per-user workspace preferences, read/write by owner only.
+
+| field         | type    | notes                                    |
+| ------------- | ------- | ---------------------------------------- |
+| timezone      | string  | e.g. Asia/Kolkata                        |
+| dateFormat    | enum    | `in` (05 Oct 2026) \| `us` (Oct 05, 2026) |
+| compactMode   | boolean | dense tables, applied via document attr  |
+| emailDigests  | boolean | daily summary preference flag            |
+| reviewAlerts  | boolean | browser pop-ups for review events        |
+| conflictAlerts| boolean | browser pop-ups for conflict events      |
+
+Profile edits: owners may update `users/{uid}` name/phone/department/bio/jobTitle
+only — `role` and `email` are immutable client-side (enforced in rules).
+
 ### projects/{id}
 
 | field       | type            | notes                          |
@@ -148,7 +164,11 @@ and the relevant notification.
 
 | method | route                    | role     | notes                              |
 | ------ | ------------------------ | -------- | ---------------------------------- |
-| POST   | /auth/register           | public   | self-registration + role choice, sets claim |
+| POST   | /auth/register           | public   | workspace-role self-registration, sets claim |
+| POST   | /users                   | manager  | provision an assignee or reviewer account |
+| POST   | /auth/google             | any-auth | first-time Google provisioning (keeps role, else uses selected role) |
+| POST   | /activity                | any-auth | validated activityLogs write (actor from token) |
+| DELETE | /notifications/:id       | any-auth | delete own notification only |
 | POST   | /projects/:id/tasks      | manager  | create + conflict check            |
 | PUT    | /tasks/:id               | manager  | edit + conflict re-check           |
 | POST   | /tasks/:id/reassign      | manager  |                                    |
