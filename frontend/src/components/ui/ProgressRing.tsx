@@ -13,7 +13,7 @@ export function ProgressRing({
   size = 120,
   strokeWidth = 10,
   sublabel = 'Completed',
-  color = '#4F46E5',
+  color = 'var(--forest)',
 }: ProgressRingProps): JSX.Element {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;

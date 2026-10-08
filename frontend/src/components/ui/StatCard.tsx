@@ -46,7 +46,7 @@ export function StatCard({
                     ? 'M 0,6 Q 20,4 40,14 T 80,20'
                     : 'M 0,20 Q 20,16 40,8 T 80,4'
                 }
-                stroke={color === 'red' ? '#EF4444' : color === 'green' ? '#10B981' : '#4F46E5'}
+                stroke={color === 'red' ? 'var(--terracotta)' : color === 'green' ? 'var(--sage)' : 'var(--forest)'}
                 strokeWidth="2"
                 strokeLinecap="round"
               />

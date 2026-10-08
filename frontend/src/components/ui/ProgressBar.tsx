@@ -29,7 +29,7 @@ export function ProgressBar({
         style={{
           flex: 1,
           height: `${height}px`,
-          backgroundColor: '#EEF2F6',
+          backgroundColor: 'var(--line)',
           borderRadius: '9999px',
           overflow: 'hidden',
         }}
