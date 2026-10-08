@@ -1,38 +1,50 @@
 import React, { useState } from 'react';
 import { X, CheckCircle2, RotateCcw } from 'lucide-react';
 import styles from './Modal.module.css';
+import { useDialog } from '../ui/useDialog';
 
 interface ReviewDecisionModalProps {
   taskTitle: string;
+  initialDecision?: 'approved' | 'rejected';
   onClose: () => void;
-  onSubmit: (decision: 'approved' | 'rejected', comments: string) => void;
+  onSubmit: (decision: 'approved' | 'rejected', comments: string) => void | Promise<void>;
 }
 
 export function ReviewDecisionModal({
   taskTitle,
+  initialDecision = 'approved',
   onClose,
   onSubmit,
 }: ReviewDecisionModalProps): JSX.Element {
-  const [decision, setDecision] = useState<'approved' | 'rejected'>('approved');
+  const [decision, setDecision] = useState<'approved' | 'rejected'>(initialDecision);
   const [comments, setComments] = useState('');
-  const [notifyAssignee, setNotifyAssignee] = useState(true);
+  const [error, setError] = useState('');
+  const [pending, setPending] = useState(false);
+  const dialogRef = useDialog(onClose, pending);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (decision === 'rejected' && !comments.trim()) {
-      alert('Feedback comments are required when requesting a revision.');
+      setError('Feedback comments are required when requesting a revision.');
       return;
     }
-    onSubmit(decision, comments);
-    onClose();
+    setError('');
+    setPending(true);
+    try {
+      await onSubmit(decision, comments);
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Could not save this review.');
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
-    <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className={styles.backdrop} onClick={() => { if (!pending) onClose(); }}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Review decision" tabIndex={-1} className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <h2 className={styles.title}>Submit Review Decision</h2>
-          <button className={styles.closeBtn} onClick={onClose}>
+          <button type="button" className={styles.closeBtn} onClick={onClose} disabled={pending} aria-label="Close review decision">
             <X size={18} />
           </button>
         </div>
@@ -102,27 +114,23 @@ export function ReviewDecisionModal({
             />
           </div>
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
-            <input
-              type="checkbox"
-              checked={notifyAssignee}
-              onChange={(e) => setNotifyAssignee(e.target.checked)}
-            />
-            <span>Send immediate notification to assignee</span>
-          </label>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>The assignee will be notified automatically when your decision is saved.</p>
+
+          {error !== '' && <p role="alert" style={{ color: '#EF4444', fontSize: '13px' }}>{error}</p>}
 
           <div className={styles.footer} style={{ margin: '0 -24px -24px -24px' }}>
-            <button type="button" className={styles.cancelBtn} onClick={onClose}>
+            <button type="button" className={styles.cancelBtn} onClick={onClose} disabled={pending}>
               Cancel
             </button>
             <button
               type="submit"
               className={styles.submitBtn}
+              disabled={pending}
               style={{
                 background: decision === 'approved' ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' : 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
               }}
             >
-              {decision === 'approved' ? 'Approve Task' : 'Request Revision'}
+              {pending ? 'Saving…' : decision === 'approved' ? 'Approve Task' : 'Request Revision'}
             </button>
           </div>
         </form>

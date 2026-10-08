@@ -3,6 +3,7 @@ import { X, AlertTriangle } from 'lucide-react';
 import { dataStore } from '../../services/demoData';
 import type { ConflictDetail } from '../../types';
 import styles from './Modal.module.css';
+import { useDialog } from '../ui/useDialog';
 
 interface ConflictResolutionModalProps {
   conflict: ConflictDetail;
@@ -15,26 +16,43 @@ export function ConflictResolutionModal({
   onClose,
   onResolved,
 }: ConflictResolutionModalProps): JSX.Element {
-  const users = dataStore.getUsers().filter((u) => u.role !== 'client');
+  const users = dataStore.getUsers().filter((u) => u.role === 'assignee');
   const [resolutionType, setResolutionType] = useState<'reassign' | 'reschedule' | 'keep_both'>('reassign');
   const [selectedAssignee, setSelectedAssignee] = useState(
-    users.find((u) => u.uid !== conflict.assigneeId)?.uid || users[0].uid
+    users.find((u) => u.uid !== conflict.assigneeId)?.uid ?? users[0]?.uid ?? ''
   );
-  const [newDeadline, setNewDeadline] = useState('2025-03-25');
+  const editableTasks = [conflict.taskA, conflict.taskB].filter((task) => !['submitted', 'in_review', 'approved'].includes(task.status));
+  const defaultTask = editableTasks.find((task) => task.id === conflict.taskB.id) ?? editableTasks[0] ?? conflict.taskB;
+  const [targetTaskId, setTargetTaskId] = useState(defaultTask.id);
+  const [newStartDate, setNewStartDate] = useState(defaultTask.startDate);
+  const [newDeadline, setNewDeadline] = useState(defaultTask.deadline);
+  const targetTask = editableTasks.find((task) => task.id === targetTaskId) ?? defaultTask;
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const dialogRef = useDialog(onClose, pending);
 
-  const handleResolve = () => {
-    dataStore.resolveConflict(conflict.id, resolutionType, {
-      newAssigneeId: selectedAssignee,
-      newDeadline,
-      targetTaskId: conflict.taskB.id,
-    });
-    onResolved();
-    onClose();
-  };
+  async function handleResolve(): Promise<void> {
+    setError('');
+    setPending(true);
+    try {
+      await dataStore.resolveConflict(conflict.id, resolutionType, {
+        newAssigneeId: selectedAssignee,
+        newStartDate,
+        newDeadline,
+        targetTaskId,
+      });
+      onResolved();
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Resolution failed. Try again.');
+    } finally {
+      setPending(false);
+    }
+  }
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Resolve schedule conflict" tabIndex={-1} className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <h2 className={styles.title}>Resolve Conflict</h2>
           <button className={styles.closeBtn} onClick={onClose}>
@@ -78,6 +96,13 @@ export function ConflictResolutionModal({
 
           {/* Resolution Options */}
           <div className={styles.sectionHeader}>Resolution Options</div>
+          {editableTasks.length > 0 ? <label className={styles.field}>Task to change
+            <select className={styles.select} value={targetTaskId} onChange={(event) => {
+              setTargetTaskId(event.target.value);
+              const selected = editableTasks.find((task) => task.id === event.target.value);
+              if (selected) { setNewStartDate(selected.startDate); setNewDeadline(selected.deadline); }
+            }}>{editableTasks.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}</select>
+          </label> : <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Both tasks are locked for review. You can acknowledge the overlap; scheduling edits become available if a revision is requested.</p>}
 
           <div className={styles.radioGroup}>
             <label className={`${styles.radioCard} ${resolutionType === 'reassign' ? styles.selectedRadio : ''}`}>
@@ -86,11 +111,12 @@ export function ConflictResolutionModal({
                 name="resolution"
                 checked={resolutionType === 'reassign'}
                 onChange={() => setResolutionType('reassign')}
+                disabled={editableTasks.length === 0}
               />
               <div className={styles.radioContent}>
                 <div className={styles.radioTitle}>Reassign to another team member</div>
                 <div className={styles.radioDesc}>
-                  Transfer &apos;{conflict.taskB.title}&apos; to someone with open capacity.
+                  Transfer &apos;{targetTask.title}&apos; to another assignee.
                 </div>
                 {resolutionType === 'reassign' && (
                   <select
@@ -115,6 +141,7 @@ export function ConflictResolutionModal({
                 name="resolution"
                 checked={resolutionType === 'reschedule'}
                 onChange={() => setResolutionType('reschedule')}
+                disabled={editableTasks.length === 0}
               />
               <div className={styles.radioContent}>
                 <div className={styles.radioTitle}>Reschedule deadline</div>
@@ -123,6 +150,9 @@ export function ConflictResolutionModal({
                 </div>
                 {resolutionType === 'reschedule' && (
                   <div style={{ marginTop: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Start date
+                      <input type="date" className={styles.input} value={newStartDate} onChange={(event) => setNewStartDate(event.target.value)} />
+                    </label>
                     <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>New Deadline:</span>
                     <input
                       type="date"
@@ -156,10 +186,11 @@ export function ConflictResolutionModal({
           <button type="button" className={styles.cancelBtn} onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className={styles.submitBtn} onClick={handleResolve}>
-            Resolve Conflict
+          <button type="button" className={styles.submitBtn} onClick={() => { void handleResolve(); }} disabled={pending || (resolutionType !== 'keep_both' && editableTasks.length === 0)}>
+            {pending ? 'Resolving...' : 'Resolve Conflict'}
           </button>
         </div>
+        {error !== '' && <p role="alert" style={{ color: '#EF4444', fontSize: '13px', padding: '0 24px 16px 24px' }}>{error}</p>}
       </div>
     </div>
   );
