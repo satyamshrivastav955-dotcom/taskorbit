@@ -19,6 +19,13 @@ const HOME: Record<Role, string> = {
   reviewer: '/reviewer',
 };
 
+const ROLE_OPTIONS = [
+  { value: 'client', label: 'Client' },
+  { value: 'manager', label: 'Manager' },
+  { value: 'assignee', label: 'Assignee' },
+  { value: 'reviewer', label: 'Reviewer' },
+] as const;
+
 export function Register(): JSX.Element {
   const nav = useNavigate();
   const dispatch = useAppDispatch();
@@ -53,6 +60,9 @@ export function Register(): JSX.Element {
         return;
       }
       const cred = await signInWithEmailAndPassword(auth, cleanEmail, password);
+      // Registration sets the custom claim server-side. Refresh the ID token
+      // before routing so SessionGate and API requests see the new role.
+      await cred.user.getIdToken(true);
       dispatch(setSession({ uid: cred.user.uid, email: cleanEmail, name: name.trim(), role }));
       nav(HOME[role], { replace: true });
     } catch {
@@ -64,31 +74,22 @@ export function Register(): JSX.Element {
 
   return (
     <div className={styles.shell}>
-      <aside className={styles.side}>
-        <div className={styles.brand}><span className={styles.mark} />TaskOrbit</div>
-        <p className={styles.tag}>Create your account, pick your role, land on your dashboard.</p>
-        <ul className={styles.roles}>
-          <li>Client creates project + requirements</li>
-          <li>Manager plans tasks, checks conflicts</li>
-          <li>Assignee submits versioned work</li>
-          <li>Reviewer approves or requests revision</li>
-        </ul>
-      </aside>
       <main className={styles.main}>
         <div className={styles.card}>
-          <h1>Create account</h1>
-          <p className={styles.sub}>Your role decides which dashboard you get.</p>
+          <div className={styles.cardBrand}><span className={styles.orbitMark} />TaskOrbit</div>
+          <h2>Create account</h2>
+          <p className={styles.sub}>Choose your workspace role and create your TaskOrbit account.</p>
           <form onSubmit={onSubmit} noValidate>
             <Input label="Full name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
             <Input label="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <Input label="Password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <Select label="Role" value={role} onChange={(e) => setRole(e.target.value as Role)}
-              options={[
-                { value: 'client', label: 'Client' },
-                { value: 'manager', label: 'Manager' },
-                { value: 'assignee', label: 'Assignee' },
-                { value: 'reviewer', label: 'Reviewer' },
-              ]} />
+            <Select
+              label="Role"
+              id="register-role"
+              value={role}
+              onChange={(e) => setRole(e.target.value as Role)}
+              options={[...ROLE_OPTIONS]}
+            />
             {error !== '' ? <p className={styles.error} role="alert">{error}</p> : null}
             <Button type="submit" pending={pending}>Create account</Button>
           </form>
