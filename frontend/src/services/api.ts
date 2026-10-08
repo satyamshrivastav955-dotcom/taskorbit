@@ -8,22 +8,23 @@ async function headers(): Promise<HeadersInit> {
   return { 'Content-Type': 'application/json', ...(token !== '' ? { Authorization: `Bearer ${token}` } : {}) };
 }
 
-async function handle(res: Response): Promise<unknown> {
+async function handle(res: Response, mutated = false): Promise<unknown> {
   if (!res.ok) {
     const body = (await res.json().catch(() => ({ error: { code: 'unknown', message: res.statusText } }))) as { error?: { message?: string } };
     throw new Error(body.error?.message ?? `Request failed (${res.status})`);
   }
+  if (mutated && typeof window !== 'undefined') window.dispatchEvent(new Event('taskorbit:mutated'));
   return res.json() as Promise<unknown>;
 }
 
 export async function apiPost(path: string, body: unknown): Promise<unknown> {
   const res = await fetch(`${base}${path}`, { method: 'POST', headers: await headers(), body: JSON.stringify(body) });
-  return handle(res);
+  return handle(res, true);
 }
 
 export async function apiPut(path: string, body: unknown): Promise<unknown> {
   const res = await fetch(`${base}${path}`, { method: 'PUT', headers: await headers(), body: JSON.stringify(body) });
-  return handle(res);
+  return handle(res, true);
 }
 
 export async function apiGet(path: string): Promise<unknown> {
@@ -33,5 +34,5 @@ export async function apiGet(path: string): Promise<unknown> {
 
 export async function apiDelete(path: string): Promise<unknown> {
   const res = await fetch(`${base}${path}`, { method: 'DELETE', headers: await headers() });
-  return handle(res);
+  return handle(res, true);
 }
