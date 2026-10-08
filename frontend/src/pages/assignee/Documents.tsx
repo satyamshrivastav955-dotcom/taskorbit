@@ -1,184 +1,19 @@
-import React, { useState } from 'react';
-import { Download, FileText, Search, Plus, Filter, FolderGit2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Download, FileText, Search, Inbox } from 'lucide-react';
 import { AppLayout, PageContainer } from '../../components/layout/AppLayout';
+import { dataStore } from '../../services/dataService';
 
 export function AssigneeDocuments(): JSX.Element {
-  const [filterTab, setFilterTab] = useState<'all' | 'spec' | 'assets' | 'deliverables'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-
-  const files = [
-    { id: 'f-1', name: 'design-tokens-v2.json', project: 'Design System Unification', type: 'Assets', size: '142 KB', date: 'Oct 04, 2026' },
-    { id: 'f-2', name: 'conflict-engine-spec.pdf', project: 'TaskOrbit Core', type: 'Specification', size: '2.1 MB', date: 'Oct 02, 2026' },
-    { id: 'f-3', name: 'api-contract-v1.yaml', project: 'Backend API Gateway', type: 'Specification', size: '84 KB', date: 'Sep 28, 2026' },
-    { id: 'f-4', name: 'nebula-dashboard-deliverable.zip', project: 'Nebula AI Platform', type: 'Deliverable', size: '14.8 MB', date: 'Sep 25, 2026' },
-    { id: 'f-5', name: 'component-library-figma-exports.zip', project: 'Design System Unification', type: 'Assets', size: '8.4 MB', date: 'Sep 20, 2026' },
-    { id: 'f-6', name: 'audit-log-export.csv', project: 'TaskOrbit Core', type: 'Deliverable', size: '512 KB', date: 'Sep 15, 2026' },
-  ];
-
-  const filtered = files.filter((f) => {
-    const matchesSearch =
-      f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.project.toLowerCase().includes(searchQuery.toLowerCase());
-    if (!matchesSearch) return false;
-    if (filterTab === 'spec') return f.type === 'Specification';
-    if (filterTab === 'assets') return f.type === 'Assets';
-    if (filterTab === 'deliverables') return f.type === 'Deliverable';
-    return true;
-  });
-
-  return (
-    <AppLayout role="assignee">
-      <PageContainer>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <div>
-            <h1 style={{ fontSize: '26px', fontWeight: 700 }}>Task & Project Documents</h1>
-            <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              Reference specifications, component assets, and upload work deliverables.
-            </p>
-          </div>
-          <button
-            onClick={() => alert('Deliverable upload dialog')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 18px',
-              background: 'var(--primary-600)',
-              color: '#FFFFFF',
-              borderRadius: '8px',
-              fontSize: '13.5px',
-              fontWeight: 600,
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            <Plus size={16} />
-            <span>Upload Deliverable</span>
-          </button>
-        </div>
-
-        {/* Filter Tabs & Search */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {(['all', 'spec', 'assets', 'deliverables'] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setFilterTab(t)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '9999px',
-                  background: filterTab === t ? 'var(--primary-600)' : '#FFF',
-                  color: filterTab === t ? '#FFF' : 'var(--text-secondary)',
-                  border: '1px solid var(--border-color)',
-                  fontWeight: filterTab === t ? 600 : 500,
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                }}
-              >
-                {t === 'all'
-                  ? 'All Documents'
-                  : t === 'spec'
-                  ? 'Specifications'
-                  : t === 'assets'
-                  ? 'Assets'
-                  : 'Deliverables'}
-              </button>
-            ))}
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: '#FFF',
-              border: '1px solid var(--border-color)',
-              padding: '6px 12px',
-              borderRadius: '8px',
-            }}
-          >
-            <Search size={14} color="var(--text-muted)" />
-            <input
-              type="text"
-              placeholder="Search documents or projects..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '12.5px' }}
-            />
-          </div>
-        </div>
-
-        {/* File Table */}
-        <div style={{ background: '#FFFFFF', border: '1px solid var(--border-color)', borderRadius: '14px', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: '#F8FAFC', textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
-                <th style={{ padding: '12px 20px', fontSize: '12px', color: 'var(--text-secondary)' }}>File Name</th>
-                <th style={{ padding: '12px 20px', fontSize: '12px', color: 'var(--text-secondary)' }}>Project</th>
-                <th style={{ padding: '12px 20px', fontSize: '12px', color: 'var(--text-secondary)' }}>Category</th>
-                <th style={{ padding: '12px 20px', fontSize: '12px', color: 'var(--text-secondary)' }}>Updated Date</th>
-                <th style={{ padding: '12px 20px', fontSize: '12px', color: 'var(--text-secondary)' }}>Size</th>
-                <th style={{ padding: '12px 20px', fontSize: '12px', color: 'var(--text-secondary)' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((f) => (
-                <tr key={f.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  <td style={{ padding: '14px 20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <FileText size={18} color="var(--primary-600)" />
-                      <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {f.name}
-                      </span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    {f.project}
-                  </td>
-                  <td style={{ padding: '14px 20px' }}>
-                    <span
-                      style={{
-                        background: '#EEF2FF',
-                        color: 'var(--primary-700)',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        fontSize: '11.5px',
-                        fontWeight: 600,
-                      }}
-                    >
-                      {f.type}
-                    </span>
-                  </td>
-                  <td style={{ padding: '14px 20px', fontSize: '12.5px', color: 'var(--text-muted)' }}>
-                    {f.date}
-                  </td>
-                  <td style={{ padding: '14px 20px', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
-                    {f.size}
-                  </td>
-                  <td style={{ padding: '14px 20px' }}>
-                    <button
-                      onClick={() => alert(`Downloading ${f.name}...`)}
-                      style={{
-                        color: 'var(--primary-600)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                      }}
-                      title="Download file"
-                    >
-                      <Download size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </PageContainer>
-    </AppLayout>
-  );
+  const [, setTick] = useState(0);
+  useEffect(() => dataStore.subscribe(() => setTick((t) => t + 1)), []);
+  const projects = dataStore.getProjects();
+  const tasks = dataStore.getTasks();
+  const files = dataStore.getSubmissions().flatMap((submission) => {
+    const task = tasks.find((item) => item.id === submission.taskId);
+    const project = task ? projects.find((item) => item.id === task.projectId) : undefined;
+    const source = submission.files && submission.files.length > 0 ? submission.files : [{ id: submission.id, name: submission.fileName, url: submission.fileUrl, size: '', type: 'deliverable', uploadedAt: submission.submittedAt }];
+    return source.map((file) => ({ ...file, taskTitle: task?.title ?? 'Task', projectTitle: project?.title ?? task?.projectName ?? 'Project', date: submission.submittedAt }));
+  }).filter((file) => `${file.name} ${file.projectTitle} ${file.taskTitle}`.toLowerCase().includes(searchQuery.toLowerCase()));
+  return <AppLayout role="assignee"><PageContainer><div style={{ marginBottom: '8px' }}><h1 style={{ fontSize: '26px', fontWeight: 700 }}>My Documents</h1><p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>Files you have submitted for review across your assigned tasks.</p></div><div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#FFF', border: '1px solid var(--border)', padding: '7px 12px', borderRadius: '8px', maxWidth: '360px' }}><Search size={14} color="var(--text-muted)" /><input type="search" placeholder="Search documents..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', width: '100%' }} /></div><div style={{ background: '#FFF', border: '1px solid var(--border)', borderRadius: '14px', overflowX: 'auto' }}>{files.length === 0 ? <div style={{ textAlign: 'center', padding: '64px 20px' }}><Inbox size={40} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} /><p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-secondary)' }}>No submitted documents</p><p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '5px' }}>Your deliverables will appear here after you submit a task for review.</p></div> : <table style={{ width: '100%', borderCollapse: 'collapse' }}><thead><tr style={{ background: '#F8FAFC', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>{['File', 'Task', 'Project', 'Submitted', 'Action'].map((heading) => <th key={heading} style={{ padding: '12px 20px', fontSize: '12px', color: 'var(--text-secondary)' }}>{heading}</th>)}</tr></thead><tbody>{files.map((file) => <tr key={`${file.id}-${file.name}`} style={{ borderBottom: '1px solid var(--border-light)' }}><td style={{ padding: '14px 20px' }}><div style={{ display: 'flex', alignItems: 'center', gap: '9px', fontSize: '13.5px', fontWeight: 600 }}><FileText size={17} color="var(--primary)" />{file.name}</div></td><td style={{ padding: '14px 20px', fontSize: '13px' }}>{file.taskTitle}</td><td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>{file.projectTitle}</td><td style={{ padding: '14px 20px', fontSize: '12.5px', color: 'var(--text-muted)' }}>{file.date.slice(0, 10)}</td><td style={{ padding: '14px 20px' }}><a href={file.url} target="_blank" rel="noreferrer" download={file.name} aria-label={`Download ${file.name}`} style={{ color: 'var(--primary)' }}><Download size={16} /></a></td></tr>)}</tbody></table>}</div></PageContainer></AppLayout>;
 }

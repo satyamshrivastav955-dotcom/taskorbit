@@ -1,197 +1,54 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RotateCcw, ArrowRight, CheckCircle2, MessageSquare, Paperclip } from 'lucide-react';
+import { RotateCcw, ArrowRight, MessageSquare, Inbox } from 'lucide-react';
 import { AppLayout, PageContainer } from '../../components/layout/AppLayout';
 import { Avatar } from '../../components/ui/Avatar';
 import { SubmitWorkModal } from '../../components/modals/SubmitWorkModal';
+import { dataStore } from '../../services/dataService';
+import { useToast } from '../../components/ui/Toast';
 
 export function AssigneeRevisions(): JSX.Element {
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [filterTab, setFilterTab] = useState<'all' | 'open' | 'in_progress' | 'resolved'>('all');
   const [showResubmitModal, setShowResubmitModal] = useState(false);
-  const [activeTaskTitle, setActiveTaskTitle] = useState('');
+  const [activeTaskId, setActiveTaskId] = useState('');
+  const [, setTick] = useState(0);
+  useEffect(() => dataStore.subscribe(() => setTick((t) => t + 1)), []);
 
-  const revisions = [
-    {
-      id: 'rev-1',
-      title: 'Adjust spacing and alignment',
-      project: 'Website Redesign',
-      taskCode: 'TASK-101',
-      taskId: 'task-1',
-      reviewerName: 'Rahul Sharma',
-      reviewerRole: 'Manager',
-      date: 'Mar 14, 2025',
-      status: 'Open',
-      comment: 'Increase the spacing between the heading and CTA button. Also align the text to follow the new brand guidelines.',
-    },
-    {
-      id: 'rev-2',
-      title: 'Update mobile layout',
-      project: 'Mobile Application',
-      taskCode: 'TASK-205',
-      taskId: 'task-mobile-ui',
-      reviewerName: 'Neha Verma',
-      reviewerRole: 'Reviewer',
-      date: 'Mar 12, 2025',
-      status: 'In Progress',
-      comment: 'The mobile layout needs better spacing and the icons should be updated as per the latest designs.',
-    },
-    {
-      id: 'rev-3',
-      title: 'Change button color',
-      project: 'Client Portal',
-      taskCode: 'TASK-310',
-      taskId: 'task-db-schema',
-      reviewerName: 'Amit Patel',
-      reviewerRole: 'Client',
-      date: 'Mar 10, 2025',
-      status: 'Resolved',
-      comment: 'Please use the updated button color from the brand palette.',
-    },
-  ];
-
-  const filtered = revisions.filter((r) => {
-    if (filterTab === 'open') return r.status === 'Open';
-    if (filterTab === 'in_progress') return r.status === 'In Progress';
-    if (filterTab === 'resolved') return r.status === 'Resolved';
+  const me = dataStore.getActiveUser();
+  const tasks = dataStore.getTasks({ assigneeId: me.uid });
+  const users = dataStore.getUsers();
+  const projects = dataStore.getProjects();
+  const revisions = tasks.filter((task) => task.status === 'revision' || task.revisionCount > 0).map((task) => {
+    const reviews = dataStore.getReviews(task.id).filter((review) => review.decision === 'rejected').sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const review = reviews[0];
+    const reviewer = users.find((user) => user.uid === task.reviewerId);
+    return { task, review, reviewer, project: projects.find((project) => project.id === task.projectId) };
+  });
+  const filtered = revisions.filter(({ task }) => {
+    if (filterTab === 'open') return task.status === 'revision';
+    if (filterTab === 'in_progress') return task.status === 'in_progress' && task.revisionCount > 0;
+    if (filterTab === 'resolved') return task.status === 'approved' && task.revisionCount > 0;
     return true;
   });
 
-  return (
-    <AppLayout role="assignee">
-      <PageContainer>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <div>
-            <h1 style={{ fontSize: '26px', fontWeight: 700 }}>Revision Requests</h1>
-            <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              View and address feedback or revision requests from managers and reviewers.
-            </p>
-          </div>
-        </div>
+  async function resolve(taskId: string): Promise<void> {
+    const task = dataStore.getTaskById(taskId);
+    if (!task) return;
+    try {
+      if (task.status === 'revision') await dataStore.updateTask(task.id, { status: 'in_progress' });
+      setActiveTaskId(task.id);
+      setShowResubmitModal(true);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Could not start the revision.', 'error');
+    }
+  }
 
-        {/* Filter Pills matching Reference Image 2 screen 5 */}
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {(['all', 'open', 'in_progress', 'resolved'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setFilterTab(t)}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '9999px',
-                background: filterTab === t ? 'var(--primary)' : '#FFF',
-                color: filterTab === t ? '#FFF' : 'var(--text-secondary)',
-                border: '1px solid var(--border)',
-                fontWeight: filterTab === t ? 600 : 500,
-                fontSize: '13px',
-              }}
-            >
-              {t === 'all'
-                ? 'All (3)'
-                : t === 'open'
-                ? 'Open (2)'
-                : t === 'in_progress'
-                ? 'In Progress (1)'
-                : 'Resolved (1)'}
-            </button>
-          ))}
-        </div>
-
-        {/* Revision Cards List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {filtered.map((rev) => (
-            <div
-              key={rev.id}
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid var(--border)',
-                borderRadius: '14px',
-                padding: '22px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <RotateCcw size={18} color="#EF4444" />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                      {rev.title}
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                      {rev.project} | {rev.taskCode}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
-                    <Avatar name={rev.reviewerName} size="sm" />
-                    <span>{rev.reviewerName} ({rev.reviewerRole})</span>
-                  </div>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{rev.date}</span>
-                  <span
-                    style={{
-                      background: rev.status === 'Open' ? '#FEE2E2' : rev.status === 'In Progress' ? '#EEF2FF' : '#DCFCE7',
-                      color: rev.status === 'Open' ? '#DC2626' : rev.status === 'In Progress' ? '#4F46E5' : '#16A34A',
-                      padding: '2px 10px',
-                      borderRadius: '9999px',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {rev.status}
-                  </span>
-                </div>
-              </div>
-
-              {/* Feedback comment quote */}
-              <div style={{ background: '#F8FAFC', padding: '14px', borderRadius: '8px', border: '1px solid var(--border-light)', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                {rev.comment}
-              </div>
-
-              {/* Action */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button
-                  onClick={() => {
-                    setActiveTaskTitle(rev.title);
-                    setShowResubmitModal(true);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 16px',
-                    background: 'var(--primary-gradient)',
-                    color: '#FFFFFF',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                  }}
-                >
-                  <span>View & Resolve</span>
-                  <ArrowRight size={14} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {showResubmitModal && (
-          <SubmitWorkModal
-            taskId="task-1"
-            taskTitle={activeTaskTitle || 'Homepage UI Design'}
-            onClose={() => setShowResubmitModal(false)}
-            onSubmitted={() => {
-              alert('Updated deliverables resubmitted for review!');
-            }}
-          />
-        )}
-      </PageContainer>
-    </AppLayout>
-  );
+  return <AppLayout role="assignee"><PageContainer>
+    <div style={{ marginBottom: '8px' }}><h1 style={{ fontSize: '26px', fontWeight: 700 }}>Revision Requests</h1><p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>Address reviewer feedback, then resubmit a new deliverable version.</p></div>
+    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>{(['all', 'open', 'in_progress', 'resolved'] as const).map((tab) => <button key={tab} onClick={() => setFilterTab(tab)} style={{ padding: '6px 14px', borderRadius: '9999px', background: filterTab === tab ? 'var(--primary)' : '#FFF', color: filterTab === tab ? '#FFF' : 'var(--text-secondary)', border: '1px solid var(--border)', fontWeight: filterTab === tab ? 600 : 500, fontSize: '13px' }}>{tab === 'all' ? `All (${revisions.length})` : tab === 'open' ? `Open (${revisions.filter(({ task }) => task.status === 'revision').length})` : tab === 'in_progress' ? `In progress (${revisions.filter(({ task }) => task.status === 'in_progress').length})` : `Resolved (${revisions.filter(({ task }) => task.status === 'approved').length})`}</button>)}</div>
+    {filtered.length === 0 ? <div style={{ background: '#FFF', border: '1px solid var(--border)', borderRadius: '14px', textAlign: 'center', padding: '64px 20px' }}><Inbox size={40} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} /><p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-secondary)' }}>No revision requests</p><p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '5px' }}>Rejected submissions and reviewer feedback will appear here.</p></div> : <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>{filtered.map(({ task, review, reviewer, project }) => <div key={task.id} style={{ background: '#FFF', border: '1px solid var(--border)', borderRadius: '14px', padding: '22px', display: 'flex', flexDirection: 'column', gap: '12px' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}><div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}><div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><RotateCcw size={18} color="#EF4444" /></div><div><div style={{ fontSize: '14.5px', fontWeight: 700 }}>{task.title}</div><div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{project?.title ?? task.projectName} · Version {task.revisionCount + 1}</div></div></div><div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}><Avatar name={reviewer?.name ?? 'Reviewer'} size="sm" /><span>{reviewer?.name ?? 'Reviewer'}</span></div></div><div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', background: '#F8FAFC', padding: '14px', borderRadius: '8px', border: '1px solid var(--border-light)' }}><MessageSquare size={15} color="var(--primary)" style={{ marginTop: '2px', flexShrink: 0 }} /><span style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{review?.comments || 'Reviewer feedback is available in the task history.'}</span></div><div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}><button onClick={() => navigate(`/assignee/tasks/${task.id}`)} style={{ padding: '8px 14px', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '13px' }}>Open task</button><button onClick={() => { void resolve(task.id); }} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'var(--primary)', color: '#FFF', borderRadius: '8px', fontSize: '13px', fontWeight: 600 }}>{task.status === 'revision' ? 'Start & resubmit' : 'Submit new version'} <ArrowRight size={14} /></button></div></div>)}</div>}
+    {showResubmitModal && activeTaskId !== '' && <SubmitWorkModal taskId={activeTaskId} taskTitle={dataStore.getTaskById(activeTaskId)?.title ?? 'Task'} onClose={() => setShowResubmitModal(false)} onSubmitted={() => toast('Updated deliverables submitted for review.', 'success')} />}
+  </PageContainer></AppLayout>;
 }
