@@ -18,8 +18,10 @@ import { ProgressBar } from '../../components/ui/ProgressBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { SubmitWorkModal } from '../../components/modals/SubmitWorkModal';
 import { dataStore } from '../../services/demoData';
+import { useToast } from '../../components/ui/Toast';
 
 export function AssigneeTaskDetail(): JSX.Element {
+  const { toast } = useToast();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [, setTick] = useState(0);
@@ -30,22 +32,28 @@ export function AssigneeTaskDetail(): JSX.Element {
     return dataStore.subscribe(() => setTick((t) => t + 1));
   }, []);
 
-  const task = dataStore.getTaskById(id || 'task-1') || dataStore.getTasks()[0];
+  const task = dataStore.getTaskById(id || '');
+  if (!task) {
+    const loading = dataStore.isLoading();
+    const error = dataStore.getError();
+    return <AppLayout role="assignee"><PageContainer><div style={{ textAlign: 'center', padding: '72px 20px' }} role={loading || error === '' ? 'status' : 'alert'}><h1>{loading ? 'Loading task…' : 'Task not found'}</h1><p style={{ color: 'var(--text-secondary)', marginTop: '6px' }}>{error !== '' ? error : loading ? 'Fetching the latest task details.' : 'The task may have been removed or is not available in this workspace.'}</p><button onClick={() => navigate('/assignee/tasks')} style={{ marginTop: '16px', color: 'var(--primary)', fontWeight: 600 }}>Back to tasks</button></div></PageContainer></AppLayout>;
+  }
   const users = dataStore.getUsers();
   const reviewer = users.find((u) => u.uid === task.reviewerId);
 
   const handleStartTask = () => {
-    dataStore.updateTask(task.id, { status: 'in_progress' });
+    void dataStore.updateTask(task.id, { status: 'in_progress' })
+      .catch((e: unknown) => toast(e instanceof Error ? e.message : 'Could not start task.', 'error'));
   };
 
   const handleToggleSubtask = (stId: string) => {
-    dataStore.toggleSubtask(task.id, stId);
+    void dataStore.toggleSubtask(task.id, stId).catch((error: unknown) => toast(error instanceof Error ? error.message : 'Checklist update failed.', 'error'));
   };
 
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
-    dataStore.addComment(task.id, commentText);
+    void dataStore.addComment(task.id, commentText).catch((error: unknown) => toast(error instanceof Error ? error.message : 'Comment failed.', 'error'));
     setCommentText('');
   };
 
@@ -87,6 +95,8 @@ export function AssigneeTaskDetail(): JSX.Element {
             )}
             <button
               onClick={() => setShowSubmitModal(true)}
+              disabled={task.status !== 'in_progress'}
+              title={task.status === 'todo' ? 'Start the task before submitting work' : undefined}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -97,7 +107,9 @@ export function AssigneeTaskDetail(): JSX.Element {
                 borderRadius: '8px',
                 fontSize: '13.5px',
                 fontWeight: 600,
-                boxShadow: '0 2px 8px rgba(79, 70, 229, 0.25)',
+                 boxShadow: task.status === 'in_progress' ? '0 2px 8px rgba(79, 70, 229, 0.25)' : 'none',
+                 opacity: task.status === 'in_progress' ? 1 : 0.55,
+                 cursor: task.status === 'in_progress' ? 'pointer' : 'not-allowed',
               }}
             >
               <UploadCloud size={16} />
@@ -124,7 +136,7 @@ export function AssigneeTaskDetail(): JSX.Element {
               <StatusBadge status={task.status} size="md" />
             </div>
             <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              {task.projectName} • {task.taskIdCode || 'TASK-101'}
+              {task.projectName} • {task.taskIdCode || '—'}
             </div>
           </div>
 
@@ -134,7 +146,7 @@ export function AssigneeTaskDetail(): JSX.Element {
         </div>
 
         {/* Two-Column Execution Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
+        <div className="responsive-grid" style={{ gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
           {/* Left Column: Description, Subtasks, Deliverables */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ background: '#FFFFFF', padding: '22px', borderRadius: '14px', border: '1px solid var(--border)' }}>
@@ -144,16 +156,15 @@ export function AssigneeTaskDetail(): JSX.Element {
               </p>
 
               <h4 style={{ fontSize: '14px', fontWeight: 700, marginTop: '18px', marginBottom: '8px' }}>Requirements</h4>
-              <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13.5px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {(task.requirementsList || [
-                  'Use approved brand guidelines',
-                  'Design for desktop and mobile',
-                  'Include hero section, features, and testimonials',
-                  'Follow accessibility best practices',
-                ]).map((req, i) => (
-                  <li key={i}>{req}</li>
-                ))}
-              </ul>
+              {(task.requirementsList ?? []).length > 0 ? (
+                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13.5px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {(task.requirementsList ?? []).map((req, i) => (
+                    <li key={i}>{req}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>No requirements were added for this task.</p>
+              )}
             </div>
 
             {/* Checklists / Subtasks */}
@@ -170,18 +181,13 @@ export function AssigneeTaskDetail(): JSX.Element {
                     ? Math.round(
                         ((task.subtasks || []).filter((s) => s.completed).length / (task.subtasks || []).length) * 100
                       )
-                    : 50
+                    : 0
                 }
                 height={6}
               />
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
-                {(task.subtasks || [
-                  { id: 'st-1', title: 'Design hero section', completed: true, dueDate: 'Mar 12, 2025' },
-                  { id: 'st-2', title: 'Create feature cards', completed: true, dueDate: 'Mar 14, 2025' },
-                  { id: 'st-3', title: 'Design testimonials section', completed: false, dueDate: 'Mar 16, 2025' },
-                  { id: 'st-4', title: 'Mobile responsive design', completed: false, dueDate: 'Mar 18, 2025' },
-                ]).map((st) => (
+                {(task.subtasks || []).map((st) => (
                   <label
                     key={st.id}
                     style={{
@@ -266,7 +272,7 @@ export function AssigneeTaskDetail(): JSX.Element {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Assignee</span>
-                  <span style={{ fontWeight: 600 }}>Priya Mehta</span>
+                      <span style={{ fontWeight: 600 }}>{dataStore.getActiveUser().name}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Project</span>
@@ -274,7 +280,7 @@ export function AssigneeTaskDetail(): JSX.Element {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Reviewer</span>
-                  <span style={{ fontWeight: 600 }}>{reviewer?.name || 'Neha Verma'}</span>
+                  <span style={{ fontWeight: 600 }}>{reviewer?.name || '—'}</span>
                 </div>
               </div>
 
@@ -305,7 +311,7 @@ export function AssigneeTaskDetail(): JSX.Element {
             taskTitle={task.title}
             onClose={() => setShowSubmitModal(false)}
             onSubmitted={() => {
-              alert('Work submitted successfully! Task moved to SUBMITTED and reviewer notified.');
+              toast('Work submitted successfully. The reviewer has been notified.', 'success');
             }}
           />
         )}

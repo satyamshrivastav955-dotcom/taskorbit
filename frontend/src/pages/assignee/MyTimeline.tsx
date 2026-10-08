@@ -1,125 +1,153 @@
-import React, { useState } from 'react';
-import { Calendar, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Calendar, CheckSquare, Inbox, Loader2 } from 'lucide-react';
 import { AppLayout, PageContainer } from '../../components/layout/AppLayout';
+import { dataStore } from '../../services/demoData';
+import styles from './AssigneePages.module.css';
+
+const BAR_COLORS = ['#6366F1', '#8B5CF6', '#0EA5E9', '#10B981', '#F59E0B', '#F97316'];
+
+function formatDate(date: Date): string {
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatShortDate(date: Date): string {
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function validDate(value: string): Date | null {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
 
 export function AssigneeTimeline(): JSX.Element {
-  const [timeRange, setTimeRange] = useState('Month');
+  const [, setTick] = useState(0);
+  useEffect(() => dataStore.subscribe(() => setTick((value) => value + 1)), []);
 
-  const myTimelineTasks = [
-    { title: 'Design hero section', dateRange: 'Mar 10 – Mar 16', start: '15%', span: '20%', color: '#818CF8' },
-    { title: 'Create feature cards', dateRange: 'Mar 12 – Mar 18', start: '25%', span: '18%', color: '#C084FC' },
-    { title: 'Design testimonials', dateRange: 'Mar 15 – Mar 22', start: '38%', span: '15%', color: '#F472B6' },
-    { title: 'Mobile responsive', dateRange: 'Mar 18 – Mar 25', start: '50%', span: '22%', color: '#34D399' },
-    { title: 'Fix UI issues', dateRange: 'Mar 20 – Mar 26', start: '60%', span: '18%', color: '#FCD34D' },
-    { title: 'Update icons', dateRange: 'Mar 22 – Mar 27', start: '68%', span: '14%', color: '#FCA5A5' },
-    { title: 'Implement dark mode', dateRange: 'Mar 25 – Mar 30', start: '78%', span: '18%', color: '#60A5FA' },
-    { title: 'Resolve feedback', dateRange: 'Mar 28 – Apr 2', start: '88%', span: '12%', color: '#A78BFA' },
-  ];
+  const me = dataStore.getActiveUser();
+  const tasks = dataStore.getTasks({ assigneeId: me.uid });
+  const loading = dataStore.isLoading();
+  const error = dataStore.getError();
+
+  const timeline = useMemo(() => {
+    const datedTasks = tasks
+      .map((task) => ({ task, start: validDate(task.startDate), end: validDate(task.deadline) }))
+      .filter((item): item is { task: (typeof tasks)[number]; start: Date; end: Date } => item.start !== null && item.end !== null);
+
+    if (datedTasks.length === 0) return null;
+
+    const startMs = Math.min(...datedTasks.map((item) => item.start.getTime()));
+    const endMs = Math.max(...datedTasks.map((item) => item.end.getTime()));
+    const padding = Math.max(86400000, Math.round((endMs - startMs) * 0.06));
+    const rangeStart = new Date(startMs - padding);
+    const rangeEnd = new Date(endMs + padding);
+    const totalMs = Math.max(1, rangeEnd.getTime() - rangeStart.getTime());
+    const markerCount = 5;
+    const markers = Array.from({ length: markerCount }, (_, index) => {
+      const timestamp = rangeStart.getTime() + (totalMs * index) / (markerCount - 1);
+      return new Date(timestamp);
+    });
+
+    return {
+      rangeStart,
+      rangeEnd,
+      markers,
+      rows: datedTasks.map(({ task, start, end }, index) => {
+        const left = Math.max(0, Math.min(100, ((start.getTime() - rangeStart.getTime()) / totalMs) * 100));
+        const right = Math.max(left, Math.min(100, ((end.getTime() - rangeStart.getTime()) / totalMs) * 100));
+        return {
+          task,
+          left,
+          width: Math.max(2, right - left),
+          color: BAR_COLORS[index % BAR_COLORS.length],
+        };
+      }),
+    };
+  }, [tasks]);
+
+  const today = Date.now();
+  const todayPosition = timeline
+    ? Math.max(0, Math.min(100, ((today - timeline.rangeStart.getTime()) / (timeline.rangeEnd.getTime() - timeline.rangeStart.getTime())) * 100))
+    : 0;
 
   return (
     <AppLayout role="assignee">
       <PageContainer>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <div className={styles.header}>
           <div>
-            <h1 style={{ fontSize: '26px', fontWeight: 700 }}>My Timeline</h1>
-            <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              View your personal task timeline and upcoming delivery deadlines.
+            <h1 className={styles.title}>My Timeline</h1>
+            <p className={styles.subtitle}>See your assigned work and delivery windows at a glance.</p>
+          </div>
+        </div>
+
+        <div className={styles.timelineToolbar}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+            <Calendar size={15} color="var(--primary)" aria-hidden="true" />
+            <span>
+              {timeline ? `${formatDate(timeline.rangeStart)} – ${formatDate(timeline.rangeEnd)}` : 'No dated assignments'}
+            </span>
+          </div>
+          <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
+            {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'} assigned
+          </span>
+        </div>
+
+        {loading && tasks.length === 0 ? (
+          <div className={styles.emptyState} style={{ border: '1px solid var(--border)', borderRadius: '14px', background: '#fff' }} role="status">
+            <Loader2 size={32} color="var(--primary)" style={{ margin: '0 auto 12px', animation: 'spin 1s linear infinite' }} aria-hidden="true" />
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Loading your timeline…</p>
+          </div>
+        ) : error !== '' && tasks.length === 0 ? (
+          <div className={styles.emptyState} style={{ border: '1px solid #FECACA', borderRadius: '14px', background: '#FFF7F7' }} role="alert">
+            <p style={{ fontSize: '15px', fontWeight: 700, color: '#B91C1C' }}>Timeline unavailable</p>
+            <p style={{ marginTop: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>{error}</p>
+          </div>
+        ) : timeline === null ? (
+          <div className={styles.emptyState} style={{ border: '1px solid var(--border)', borderRadius: '14px', background: '#fff' }}>
+            <Inbox size={40} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} aria-hidden="true" />
+            <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+              {tasks.length === 0 ? 'No tasks assigned yet' : 'No dated tasks to display'}
+            </p>
+            <p style={{ marginTop: '5px', fontSize: '13px', color: 'var(--text-muted)' }}>
+              {tasks.length === 0 ? 'Assignments will appear here when a manager adds them to your queue.' : 'Add start and due dates to your assignments to see them on the timeline.'}
             </p>
           </div>
-        </div>
-
-        {/* Toolbar matching Reference Image 2 screen 6 */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '12px 18px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-            <Calendar size={15} color="var(--primary)" />
-            <span>Mar 1, 2025 – Mar 31, 2025</span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border)', background: '#FFFFFF', fontSize: '12.5px', fontWeight: 600 }}>
-              Month
-            </button>
-            <button style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border)', background: '#FFFFFF', fontSize: '12.5px', fontWeight: 600 }}>
-              Today
-            </button>
-            <div style={{ display: 'flex', gap: '2px' }}>
-              <button style={{ width: '30px', height: '30px', borderRadius: '6px', border: '1px solid var(--border)', background: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ChevronLeft size={16} />
-              </button>
-              <button style={{ width: '30px', height: '30px', borderRadius: '6px', border: '1px solid var(--border)', background: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Personal Gantt Viewport */}
-        <div style={{ background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: '14px', padding: '22px', position: 'relative', overflowX: 'auto' }}>
-          {/* Timeline Days Header */}
-          <div style={{ display: 'grid', gridTemplateColumns: '200px repeat(7, 1fr)', borderBottom: '1px solid var(--border)', paddingBottom: '10px', fontSize: '11.5px', color: 'var(--text-secondary)', textAlign: 'center' }}>
-            <div style={{ textAlign: 'left', fontWeight: 600 }}>Task</div>
-            <div>Mar 1</div>
-            <div>Mar 5</div>
-            <div>Mar 10</div>
-            <div style={{ position: 'relative' }}>
-              Mar 15
-              <span style={{ position: 'absolute', top: '-18px', left: '50%', transform: 'translateX(-50%)', background: '#EF4444', color: '#FFF', fontSize: '9px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px' }}>
-                Today
-              </span>
-            </div>
-            <div>Mar 20</div>
-            <div>Mar 25</div>
-            <div>Mar 30</div>
-          </div>
-
-          {/* Vertical Today Line */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '55px',
-              bottom: '25px',
-              left: 'calc(200px + (100% - 200px) * 0.5)',
-              width: '1px',
-              borderLeft: '1.5px dashed #EF4444',
-              pointerEvents: 'none',
-            }}
-          />
-
-          {/* Task Timeline Rows */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '16px' }}>
-            {myTimelineTasks.map((t, i) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '200px 1fr', alignItems: 'center' }}>
-                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>
-                  {t.title}
-                </span>
-
-                <div style={{ position: 'relative', height: '24px', background: '#F8FAFC', borderRadius: '6px' }}>
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: t.start,
-                      width: t.span,
-                      height: '20px',
-                      top: '2px',
-                      background: t.color,
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      color: '#FFFFFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '0 8px',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-                    }}
-                  >
-                    {t.title}
-                  </div>
+        ) : (
+          <div className={styles.timelineViewport}>
+            <div className={styles.timelineGrid}>
+              <div className={styles.timelineHeader}>
+                <div>Task</div>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${timeline.markers.length}, 1fr)` }}>
+                  {timeline.markers.map((marker) => <span key={marker.toISOString()}>{formatShortDate(marker)}</span>)}
                 </div>
               </div>
-            ))}
+
+              {todayPosition > 0 && todayPosition < 100 && (
+                <div
+                  aria-hidden="true"
+                  style={{ position: 'absolute', top: '55px', bottom: '25px', left: `calc(200px + (100% - 244px) * ${todayPosition / 100})`, width: '1px', borderLeft: '1.5px dashed #EF4444', pointerEvents: 'none' }}
+                />
+              )}
+
+              <div className={styles.timelineRows}>
+                {timeline.rows.map(({ task, left, width, color }) => (
+                  <div key={task.id} className={styles.timelineRow}>
+                    <div className={styles.timelineTaskName} title={task.title}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px' }}>
+                        <CheckSquare size={15} color={task.status === 'approved' ? '#10B981' : 'var(--primary)'} aria-hidden="true" />
+                        {task.title}
+                      </span>
+                    </div>
+                    <div className={styles.timelineTrack}>
+                      <div className={styles.timelineBar} style={{ left: `${left}%`, width: `${width}%`, background: color }} title={`${task.title}: ${task.startDate} → ${task.deadline}`}>
+                        {task.status.replace('_', ' ')}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </PageContainer>
     </AppLayout>
   );

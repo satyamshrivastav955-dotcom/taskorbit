@@ -1,17 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckSquare, Search, Filter, MoreVertical, ArrowUp, ArrowDown } from 'lucide-react';
+import { CheckSquare, Search, Filter, MoreVertical, ArrowUp, ArrowDown, Inbox, Loader2 } from 'lucide-react';
 import { AppLayout, PageContainer } from '../../components/layout/AppLayout';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { PriorityBadge } from '../../components/ui/PriorityBadge';
 import { dataStore } from '../../services/demoData';
+import styles from './AssigneePages.module.css';
 
 export function MyTasks(): JSX.Element {
   const navigate = useNavigate();
   const [filterTab, setFilterTab] = useState<'all' | 'todo' | 'in_progress' | 'in_review'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [, setTick] = useState(0);
 
-  const tasks = dataStore.getTasks();
+  useEffect(() => dataStore.subscribe(() => setTick((t) => t + 1)), []);
+
+  const me = dataStore.getActiveUser();
+  const tasks = dataStore.getTasks({ assigneeId: me.uid });
+  const loading = dataStore.isLoading();
+  const error = dataStore.getError();
 
   const filtered = tasks.filter((t) => {
     const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -40,6 +47,7 @@ export function MyTasks(): JSX.Element {
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
               onClick={() => setFilterTab('all')}
+              aria-pressed={filterTab === 'all'}
               style={{
                 padding: '6px 14px',
                 borderRadius: '9999px',
@@ -54,6 +62,7 @@ export function MyTasks(): JSX.Element {
             </button>
             <button
               onClick={() => setFilterTab('todo')}
+              aria-pressed={filterTab === 'todo'}
               style={{
                 padding: '6px 14px',
                 borderRadius: '9999px',
@@ -64,10 +73,11 @@ export function MyTasks(): JSX.Element {
                 fontSize: '13px',
               }}
             >
-              To Do (3)
+              To Do ({tasks.filter((task) => task.status === 'todo').length})
             </button>
             <button
               onClick={() => setFilterTab('in_progress')}
+              aria-pressed={filterTab === 'in_progress'}
               style={{
                 padding: '6px 14px',
                 borderRadius: '9999px',
@@ -78,10 +88,11 @@ export function MyTasks(): JSX.Element {
                 fontSize: '13px',
               }}
             >
-              In Progress (5)
+              In Progress ({tasks.filter((task) => task.status === 'in_progress').length})
             </button>
             <button
               onClick={() => setFilterTab('in_review')}
+              aria-pressed={filterTab === 'in_review'}
               style={{
                 padding: '6px 14px',
                 borderRadius: '9999px',
@@ -92,7 +103,7 @@ export function MyTasks(): JSX.Element {
                 fontSize: '13px',
               }}
             >
-              In Review (2)
+              In Review ({tasks.filter((task) => task.status === 'in_review' || task.status === 'submitted').length})
             </button>
           </div>
 
@@ -111,8 +122,24 @@ export function MyTasks(): JSX.Element {
         </div>
 
         {/* Tasks Table */}
-        <div style={{ background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: '14px', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className={styles.tableCard}>
+          {loading && tasks.length === 0 ? (
+            <div className={styles.emptyState} role="status">
+              <Loader2 size={32} color="var(--primary)" style={{ margin: '0 auto 12px', animation: 'spin 1s linear infinite' }} aria-hidden="true" />
+              <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Loading your tasks…</p>
+            </div>
+          ) : error !== '' && tasks.length === 0 ? (
+            <div className={styles.emptyState} role="alert">
+              <p style={{ fontSize: '15px', fontWeight: 700, color: '#B91C1C' }}>Tasks unavailable</p>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{error}</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className={styles.emptyState}>
+              <Inbox size={40} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} aria-hidden="true" />
+              <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-secondary)' }}>{tasks.length === 0 ? 'No tasks assigned yet' : 'No matching tasks'}</p>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '5px' }}>{tasks.length === 0 ? 'New assignments will appear here.' : 'Try another filter or search term.'}</p>
+            </div>
+          ) : <table className={styles.table}>
             <thead>
               <tr style={{ background: '#F8FAFC', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
                 <th style={{ padding: '12px 20px', fontSize: '12px', color: 'var(--text-secondary)' }}>Task</th>
@@ -128,6 +155,13 @@ export function MyTasks(): JSX.Element {
                 <tr
                   key={t.id}
                   onClick={() => navigate(`/assignee/tasks/${t.id}`)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      navigate(`/assignee/tasks/${t.id}`);
+                    }
+                  }}
+                  tabIndex={0}
                   style={{ borderBottom: '1px solid var(--border-light)', cursor: 'pointer' }}
                 >
                   <td style={{ padding: '14px 20px' }}>
@@ -135,7 +169,7 @@ export function MyTasks(): JSX.Element {
                       <CheckSquare size={16} color="var(--primary)" />
                       <div>
                         <div style={{ fontSize: '13.5px', fontWeight: 600 }}>{t.title}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.taskIdCode || 'TASK'}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.taskIdCode || '—'}</div>
                       </div>
                     </div>
                   </td>
@@ -165,7 +199,7 @@ export function MyTasks(): JSX.Element {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table>}
         </div>
       </PageContainer>
     </AppLayout>
