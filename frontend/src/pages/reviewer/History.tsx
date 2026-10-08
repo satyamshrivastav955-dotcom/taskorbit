@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -22,14 +22,26 @@ export function ReviewHistory(): JSX.Element {
   const allTasks: Task[] = dataStore.getTasks();
   const allProjects: Project[] = dataStore.getProjects();
   const users: UserProfile[] = dataStore.getUsers();
+  const [, setTick] = useState(0);
+  useEffect(() => dataStore.subscribe(() => setTick((value) => value + 1)), []);
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'approved' | 'revision'>('all');
 
   // Filter tasks that have review activity (approved or revision)
-  const reviewedTasks = allTasks.filter(
-    (t: Task) => t.status === 'approved' || t.status === 'revision'
-  );
+  const myReviews = dataStore.getReviews().filter((review) => review.reviewerId === dataStore.getActiveUser().uid);
+  const reviewedTasks = allTasks.filter((task: Task) => myReviews.some((review) => review.taskId === task.id));
+  const turnaroundHours = myReviews
+    .map((review) => {
+      const submission = dataStore.getSubmissions(review.taskId).find((item) => item.id === review.submissionId);
+      if (!submission) return null;
+      const hours = (new Date(review.createdAt).getTime() - new Date(submission.submittedAt).getTime()) / 3600000;
+      return Number.isFinite(hours) && hours >= 0 ? hours : null;
+    })
+    .filter((hours): hours is number => hours !== null);
+  const averageTurnaroundHours = turnaroundHours.length === 0
+    ? null
+    : Math.round((turnaroundHours.reduce((total, hours) => total + hours, 0) / turnaroundHours.length) * 10) / 10;
 
   const filteredTasks = reviewedTasks.filter((t: Task) => {
     const projName = allProjects.find((p: Project) => p.id === t.projectId)?.title || '';
@@ -63,29 +75,29 @@ export function ReviewHistory(): JSX.Element {
         <div className={styles.statsGrid}>
           <StatCard
             label="Total Reviews Conducted"
-            value={reviewedTasks.length + 18}
-            change="+6 this week"
-            trend="up"
+            value={reviewedTasks.length}
+            change={reviewedTasks.length > 0 ? `${reviewedTasks.length} total logged` : 'No reviews yet'}
+            trend="neutral"
             icon={<Layers size={20} />}
           />
           <StatCard
             label="Approved Deliverables"
-            value={approvedCount + 14}
-            change="78% approval rate"
+            value={approvedCount}
+            change={reviewedTasks.length > 0 ? `${Math.round((approvedCount / reviewedTasks.length) * 100)}% approval rate` : '0% approval rate'}
             trend="up"
             icon={<CheckCircle2 size={20} />}
           />
           <StatCard
             label="Revisions Requested"
-            value={revisionCount + 4}
-            change="22% revision rate"
-            trend="down"
+            value={revisionCount}
+            change={reviewedTasks.length > 0 ? `${Math.round((revisionCount / reviewedTasks.length) * 100)}% revision rate` : '0% revision rate'}
+            trend={revisionCount > 0 ? 'down' : 'neutral'}
             icon={<AlertCircle size={20} />}
           />
           <StatCard
             label="Average Review Turnaround"
-            value="3.8 hrs"
-            change="-45m faster than target"
+             value={averageTurnaroundHours === null ? '—' : `${averageTurnaroundHours}h`}
+             change={averageTurnaroundHours === null ? 'No timestamp pair recorded' : 'Average submission to decision'}
             trend="up"
             icon={<Clock size={20} />}
           />
@@ -156,13 +168,13 @@ export function ReviewHistory(): JSX.Element {
                       <td>
                         <div className={styles.taskCell}>
                           <span className={styles.taskTitle}>{task.title}</span>
-                          <span className={styles.projectName}>{project?.name || 'Project'}</span>
+                           <span className={styles.projectName}>{project?.title || '—'}</span>
                         </div>
                       </td>
                       <td>
                         <div className={styles.assigneeCell}>
-                          <Avatar name={assignee?.name || 'Team Member'} src={assignee?.avatar} size="sm" />
-                          <span className={styles.assigneeName}>{assignee?.name || 'Assignee'}</span>
+                          <Avatar name={assignee?.name} src={assignee?.avatar} size="sm" />
+                          <span className={styles.assigneeName}>{assignee?.name || '—'}</span>
                         </div>
                       </td>
                       <td>
@@ -171,20 +183,18 @@ export function ReviewHistory(): JSX.Element {
                       <td>
                         <div className={styles.dateCell}>
                           <Calendar size={13} />
-                          <span>{task.updatedAt || 'Recent'}</span>
+                          <span>{task.updatedAt ? task.updatedAt.slice(0, 10) : '—'}</span>
                         </div>
                       </td>
                       <td>
                         <span className={styles.notesCell}>
-                          {task.status === 'approved'
-                            ? 'All design tokens and acceptance criteria passed inspection.'
-                            : 'Revision requested: Color contrast ratio and padding adjustments required.'}
+                           {myReviews.find((review) => review.taskId === task.id)?.comments || 'No review comments recorded.'}
                         </span>
                       </td>
                       <td>
                         <button
                           className={styles.reviewBtn}
-                          onClick={() => navigate(`/reviewer/${task.id}`)}
+                          onClick={() => navigate(`/reviewer/reviews/${task.id}`)}
                         >
                           <span>View Audit</span>
                           <ExternalLink size={14} />

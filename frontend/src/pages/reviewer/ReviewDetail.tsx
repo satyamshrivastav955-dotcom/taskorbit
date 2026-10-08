@@ -1,412 +1,86 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft,
-  CheckCircle2,
-  AlertCircle,
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
-  MapPin,
-  MessageSquare,
-  Check,
-  Layers,
-} from 'lucide-react';
-import { AppLayout } from '../../components/layout/AppLayout';
+import { ArrowLeft, CheckCircle2, FileText, ExternalLink, AlertCircle, Clock } from 'lucide-react';
+import { AppLayout, PageContainer } from '../../components/layout/AppLayout';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { PriorityBadge } from '../../components/ui/PriorityBadge';
+import { Avatar } from '../../components/ui/Avatar';
 import { ReviewDecisionModal } from '../../components/modals/ReviewDecisionModal';
-import { dataStore } from '../../services/demoData';
-import type { Task, Project, UserProfile } from '../../types';
-import styles from './ReviewDetail.module.css';
-
-interface AnnotationPin {
-  id: string;
-  number: number;
-  x: number; // percentage
-  y: number; // percentage
-  author: string;
-  time: string;
-  comment: string;
-}
+import { dataStore } from '../../services/dataService';
+import { useToast } from '../../components/ui/Toast';
 
 export function ReviewDetail(): JSX.Element {
+  const { toast } = useToast();
   const { id = '' } = useParams();
   const navigate = useNavigate();
-
-  const allTasks: Task[] = dataStore.getTasks();
-  const task = allTasks.find((t: Task) => t.id === id) || allTasks.find((t: Task) => t.status === 'in_review') || allTasks[0];
-  const allProjects: Project[] = dataStore.getProjects();
-  const project = allProjects.find((p: Project) => p.id === task?.projectId);
-  const users: UserProfile[] = dataStore.getUsers();
-  const assignee = users.find((u: UserProfile) => u.uid === task?.assigneeId);
-
-  const [version, setVersion] = useState<'v2' | 'v1'>('v2');
-  const [zoom, setZoom] = useState<number>(100);
-  const [activeTool, setActiveTool] = useState<'pin' | 'area' | 'comment'>('pin');
-  const [selectedPinId, setSelectedPinId] = useState<string | null>('pin-1');
-  const [newCommentText, setNewCommentText] = useState('');
-
-  // Modals
+  const [, setTick] = useState(0);
   const [decisionModalOpen, setDecisionModalOpen] = useState(false);
+  const [initialDecision, setInitialDecision] = useState<'approved' | 'rejected'>('approved');
 
-  // Checklist state
-  const [checklist, setChecklist] = useState([
-    { id: 'c1', label: 'Color palette complies with WCAG AA contrast standards', checked: true },
-    { id: 'c2', label: 'Responsive layout verified across Desktop (1440px) and Mobile (375px)', checked: true },
-    { id: 'c3', label: 'Interactive component states (hover, focus, disabled) provided', checked: true },
-    { id: 'c4', label: 'Typography matches design tokens and hierarchy', checked: false },
-  ]);
+  useEffect(() => dataStore.subscribe(() => setTick((t) => t + 1)), []);
 
-  // Visual pins state
-  const [pins, setPins] = useState<AnnotationPin[]>([
-    {
-      id: 'pin-1',
-      number: 1,
-      x: 34,
-      y: 28,
-      author: 'Marcus Brody',
-      time: '12m ago',
-      comment: 'Header text contrast is currently 3.8:1. Needs minimum 4.5:1 for accessibility.',
-    },
-    {
-      id: 'pin-2',
-      number: 2,
-      x: 72,
-      y: 52,
-      author: 'Marcus Brody',
-      time: '9m ago',
-      comment: 'Action button corner radius should be 8px instead of 4px to match design system.',
-    },
-    {
-      id: 'pin-3',
-      number: 3,
-      x: 48,
-      y: 78,
-      author: 'Elena Rostova',
-      time: '5m ago',
-      comment: 'Addressed the data table overflow handling. Scrollbar now appears horizontally.',
-    },
-  ]);
+  const task = dataStore.getTaskById(id);
+  const project = task ? dataStore.getProjectById(task.projectId) : undefined;
+  const assignee = task ? dataStore.getUserById(task.assigneeId) : undefined;
+  const submissions = task ? dataStore.getSubmissions(task.id).sort((a, b) => b.version - a.version) : [];
+  const latest = submissions[0];
 
-  const handleToggleChecklist = (checkId: string) => {
-    setChecklist((prev) =>
-      prev.map((item) => (item.id === checkId ? { ...item, checked: !item.checked } : item))
-    );
-  };
-
-  const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (activeTool !== 'pin') return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
-    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
-
-    const newPin: AnnotationPin = {
-      id: `pin-${Date.now()}`,
-      number: pins.length + 1,
-      x,
-      y,
-      author: 'Marcus Brody (Reviewer)',
-      time: 'Just now',
-      comment: 'Click below to write your feedback for this spot.',
-    };
-
-    setPins((prev) => [...prev, newPin]);
-    setSelectedPinId(newPin.id);
-  };
-
-  const handleAddComment = () => {
-    if (!newCommentText.trim()) return;
-    if (selectedPinId) {
-      setPins((prev) =>
-        prev.map((p) =>
-          p.id === selectedPinId ? { ...p, comment: newCommentText.trim() } : p
-        )
-      );
-      setNewCommentText('');
+  useEffect(() => {
+    if (task?.status === 'submitted') {
+      void dataStore.updateTask(task.id, { status: 'in_review' }).catch((error: unknown) => {
+        toast(error instanceof Error ? error.message : 'Could not open this review.', 'error');
+      });
     }
-  };
+  }, [task?.id, task?.status, toast]);
 
-  const handleConfirmDecision = (decision: 'approved' | 'revision', feedbackNotes: string) => {
-    dataStore.reviewTask(task.id, decision === 'approved' ? 'approved' : 'rejected', feedbackNotes);
+  if (!task) {
+    const loading = dataStore.isLoading();
+    const error = dataStore.getError();
+    return <AppLayout role="reviewer"><PageContainer><div style={{ textAlign: 'center', padding: '80px 20px' }} role={loading || error === '' ? 'status' : 'alert'}><h1>{loading ? 'Loading review…' : 'Review not found'}</h1><p style={{ color: 'var(--text-secondary)' }}>{error !== '' ? error : loading ? 'Fetching the latest review queue.' : 'This task is no longer available in your review workspace.'}</p><button onClick={() => navigate('/reviewer/queue')} style={{ marginTop: '16px', color: 'var(--primary)', fontWeight: 600 }}>Back to queue</button></div></PageContainer></AppLayout>;
+  }
+  const currentTask = task;
+
+  async function submitDecision(decision: 'approved' | 'rejected', comments: string): Promise<void> {
+    await dataStore.reviewTask(currentTask.id, decision, comments, latest?.id);
     setDecisionModalOpen(false);
+    toast(decision === 'approved' ? 'Work approved. The assignee has been notified.' : 'Revision requested. Your feedback is with the assignee.', 'success');
     navigate('/reviewer/queue');
-  };
+  }
 
   return (
     <AppLayout role="reviewer">
-      <div className={styles.container}>
-        {/* Top Bar */}
-        <div className={styles.topBar}>
-          <div className={styles.titleArea}>
-            <button className={styles.backBtn} onClick={() => navigate('/reviewer/queue')}>
-              <ArrowLeft size={16} />
-              <span>Back to Queue</span>
-            </button>
-            <h1 className={styles.taskTitle}>{task?.title || 'Deliverable Review'}</h1>
-            <div className={styles.metaChips}>
-              <span className={styles.projectChip}>{project?.title || 'Project'}</span>
-              <StatusBadge status={task?.status || 'in_review'} />
-              <PriorityBadge priority={task?.priority || 'high'} />
-            </div>
+      <PageContainer>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+          <div>
+            <button onClick={() => navigate('/reviewer/queue')} style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '12px' }}><ArrowLeft size={15} /> Back to queue</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}><h1 style={{ fontSize: '26px', fontWeight: 700 }}>{task.title}</h1><StatusBadge status={task.status} /><PriorityBadge priority={task.priority} /></div>
+            <p style={{ marginTop: '5px', fontSize: '13px', color: 'var(--text-secondary)' }}>{project?.title ?? task.projectName} · Version {latest?.version ?? '—'} · Due {task.deadline}</p>
           </div>
-
-          <div className={styles.actionsArea}>
-            <button
-              className={styles.btnRevise}
-              onClick={() => setDecisionModalOpen(true)}
-            >
-              <AlertCircle size={16} />
-              <span>Request Revision</span>
-            </button>
-            <button
-              className={styles.btnApprove}
-              onClick={() => setDecisionModalOpen(true)}
-            >
-              <CheckCircle2 size={16} />
-              <span>Approve Deliverable</span>
-            </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={() => { setInitialDecision('rejected'); setDecisionModalOpen(true); }} disabled={task.status !== 'in_review' || !latest} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 14px', border: '1px solid #FECACA', color: '#B91C1C', background: '#FFF', borderRadius: '8px', fontWeight: 600, fontSize: '13px' }}><AlertCircle size={15} /> Request revision</button>
+            <button onClick={() => { setInitialDecision('approved'); setDecisionModalOpen(true); }} disabled={task.status !== 'in_review' || !latest} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 14px', border: 0, color: '#FFF', background: '#16A34A', borderRadius: '8px', fontWeight: 600, fontSize: '13px' }}><CheckCircle2 size={15} /> Approve</button>
           </div>
         </div>
 
-        {/* Main 2-Column Review Layout */}
-        <div className={styles.mainGrid}>
-          {/* Left Column: Interactive Deliverable Canvas */}
-          <div className={styles.canvasCard}>
-            <div className={styles.canvasToolbar}>
-              {/* Version Switcher */}
-              <div className={styles.versionSelectGroup}>
-                <span className={styles.versionLabel}>Version</span>
-                <button
-                  className={`${styles.versionBtn} ${version === 'v2' ? styles.activeVersionBtn : ''}`}
-                  onClick={() => setVersion('v2')}
-                >
-                  v2 (Current)
-                </button>
-                <button
-                  className={`${styles.versionBtn} ${version === 'v1' ? styles.activeVersionBtn : ''}`}
-                  onClick={() => setVersion('v1')}
-                >
-                  v1 (Initial)
-                </button>
+        <div className="responsive-grid" style={{ gridTemplateColumns: 'minmax(0, 1.7fr) minmax(280px, 1fr)', gap: '20px', alignItems: 'start' }}>
+          <section style={{ background: '#FFF', border: '1px solid var(--border)', borderRadius: '14px', padding: '22px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}><div><h2 style={{ fontSize: '16px', fontWeight: 700 }}>Submitted deliverables</h2><p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px' }}>Open the files below to review the exact version submitted by the assignee.</p></div><span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'var(--text-muted)' }}><Clock size={14} /> {latest?.submittedAt.slice(0, 16).replace('T', ' ') ?? 'Not submitted'}</span></div>
+            {!latest ? <div style={{ padding: '42px 20px', textAlign: 'center', background: '#F8FAFC', borderRadius: '10px', color: 'var(--text-secondary)' }}>No submission found for this task.</div> : <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {(latest.files && latest.files.length > 0 ? latest.files : [{ id: latest.id, name: latest.fileName, url: latest.fileUrl, size: '', type: 'file', uploadedAt: latest.submittedAt }]).map((file) => <a key={file.id} href={file.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '13px 14px', border: '1px solid var(--border)', borderRadius: '9px', color: 'var(--text-primary)', textDecoration: 'none' }}><FileText size={19} color="var(--primary)" /><span style={{ flex: 1, fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>{file.name}</span><span style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}>Open <ExternalLink size={13} /></span></a>)}
               </div>
+              <div style={{ marginTop: '18px', padding: '14px', background: '#F8FAFC', borderRadius: '9px' }}><h3 style={{ fontSize: '12.5px', fontWeight: 700, marginBottom: '6px' }}>Assignee note</h3><p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.55 }}>{latest.note || 'No note was provided with this submission.'}</p></div>
+            </>}
+          </section>
 
-              {/* Annotation Tools */}
-              <div className={styles.toolGroup}>
-                <button
-                  className={`${styles.toolBtn} ${activeTool === 'pin' ? styles.activeToolBtn : ''}`}
-                  onClick={() => setActiveTool('pin')}
-                >
-                  <MapPin size={14} />
-                  <span>Pin Point</span>
-                </button>
-                <button
-                  className={`${styles.toolBtn} ${activeTool === 'comment' ? styles.activeToolBtn : ''}`}
-                  onClick={() => setActiveTool('comment')}
-                >
-                  <MessageSquare size={14} />
-                  <span>Comment</span>
-                </button>
-              </div>
-
-              {/* Zoom Controls */}
-              <div className={styles.zoomGroup}>
-                <button
-                  className={styles.iconBtn}
-                  onClick={() => setZoom((z) => Math.max(50, z - 10))}
-                  title="Zoom Out"
-                >
-                  <ZoomOut size={14} />
-                </button>
-                <span className={styles.zoomLabel}>{zoom}%</span>
-                <button
-                  className={styles.iconBtn}
-                  onClick={() => setZoom((z) => Math.min(150, z + 10))}
-                  title="Zoom In"
-                >
-                  <ZoomIn size={14} />
-                </button>
-                <button
-                  className={styles.iconBtn}
-                  onClick={() => setZoom(100)}
-                  title="Reset Zoom"
-                >
-                  <RotateCcw size={14} />
-                </button>
-              </div>
-            </div>
-
-            {/* Interactive Viewport Canvas */}
-            <div className={styles.canvasArea}>
-              <div
-                className={styles.previewFrame}
-                style={{ transform: `scale(${zoom / 100})` }}
-                onClick={handleCanvasClick}
-              >
-                {/* Simulated deliverable document/mockup */}
-                <div className={styles.documentMock}>
-                  <div className={styles.docHeader}>
-                    <h2 className={styles.docTitle}>
-                      {task?.title}: Technical Specification & Mockup
-                    </h2>
-                    <div className={styles.docSub}>
-                      Generated for {project?.title || 'Project'} • Version {version} • Submitted by{' '}
-                      {assignee?.name || 'Assignee'}
-                    </div>
-                  </div>
-
-                  <div className={styles.docBody}>
-                    <p>
-                      <strong>Summary of Deliverable:</strong> This component implements the
-                      unified real-time query interface and conflict prevention flow according to
-                      system requirements.
-                    </p>
-
-                    <div className={styles.docCodeBlock}>
-                      {`// TaskOrbit Conflict Detection Logic\nfunction hasConflict(taskA, taskB) {\n  return taskA.startDate <= taskB.endDate && taskB.startDate <= taskA.endDate;\n}`}
-                    </div>
-
-                    <p>
-                      Key changes in <strong>{version}</strong>:
-                    </p>
-                    <ul>
-                      <li>Refactored UI badge color weights to improve accessibility.</li>
-                      <li>Standardized button paddings across dialog and side drawer views.</li>
-                      <li>Added real-time feedback notifications for state transitions.</li>
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Live Placed Pins */}
-                {pins.map((pin) => (
-                  <div
-                    key={pin.id}
-                    className={`${styles.pinMarker} ${selectedPinId === pin.id ? styles.activePinMarker : ''}`}
-                    style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedPinId(pin.id);
-                    }}
-                    title={`Pin #${pin.number}: ${pin.comment}`}
-                  >
-                    <span className={styles.pinNumber}>{pin.number}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Review Checklist, Annotations & Submission Info */}
-          <div className={styles.sidePanel}>
-            {/* Review Checklist */}
-            <div className={styles.panelCard}>
-              <div className={styles.panelTitle}>
-                <span>Review Checklist</span>
-                <span className={styles.badgeCount}>
-                  {checklist.filter((c) => c.checked).length}/{checklist.length}
-                </span>
-              </div>
-              <div className={styles.checklist}>
-                {checklist.map((item) => (
-                  <div
-                    key={item.id}
-                    className={styles.checkItem}
-                    onClick={() => handleToggleChecklist(item.id)}
-                  >
-                    <div className={`${styles.checkbox} ${item.checked ? styles.checkedBox : ''}`}>
-                      {item.checked && <Check size={12} strokeWidth={3} />}
-                    </div>
-                    <span className={styles.checkText}>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Annotations & Pins */}
-            <div className={styles.panelCard}>
-              <div className={styles.panelTitle}>
-                <span>Annotations & Feedback</span>
-                <span className={styles.badgeCount}>{pins.length}</span>
-              </div>
-              <div className={styles.annotationList}>
-                {pins.map((pin) => (
-                  <div
-                    key={pin.id}
-                    className={`${styles.annotationItem} ${selectedPinId === pin.id ? styles.activeAnnotationItem : ''}`}
-                    onClick={() => setSelectedPinId(pin.id)}
-                  >
-                    <div className={styles.itemBadge}>{pin.number}</div>
-                    <div className={styles.itemContent}>
-                      <div className={styles.itemHeader}>
-                        <span className={styles.itemAuthor}>{pin.author}</span>
-                        <span className={styles.itemTime}>{pin.time}</span>
-                      </div>
-                      <p className={styles.itemComment}>{pin.comment}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Add Comment Box */}
-              <div className={styles.addCommentBox}>
-                <textarea
-                  className={styles.commentInput}
-                  rows={2}
-                  placeholder={
-                    selectedPinId
-                      ? `Update comment for Pin #${pins.find((p) => p.id === selectedPinId)?.number || ''}...`
-                      : 'Select a pin or click the canvas to annotate...'
-                  }
-                  value={newCommentText}
-                  onChange={(e) => setNewCommentText(e.target.value)}
-                />
-                <button
-                  className={styles.addPinBtn}
-                  onClick={handleAddComment}
-                  disabled={!selectedPinId || !newCommentText.trim()}
-                >
-                  Save Comment
-                </button>
-              </div>
-            </div>
-
-            {/* Submission Info Card */}
-            <div className={styles.panelCard}>
-              <div className={styles.panelTitle}>
-                <span>Submission Details</span>
-                <Layers size={16} color="var(--text-muted)" />
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Assignee</span>
-                <span className={styles.infoVal}>{assignee?.name || 'Assignee'}</span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Version</span>
-                <span className={styles.infoVal}>v2.0 (Latest)</span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Submitted Date</span>
-                <span className={styles.infoVal}>Today, 10:45 AM</span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Deliverable File</span>
-                <span className={styles.infoVal}>spec_v2_final.pdf</span>
-              </div>
-            </div>
-          </div>
+          <aside style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <section style={{ background: '#FFF', border: '1px solid var(--border)', borderRadius: '14px', padding: '20px' }}><h2 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '14px' }}>Task context</h2><div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}><div><span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '11.5px', marginBottom: '4px' }}>Assignee</span><div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}><Avatar name={assignee?.name} size="sm" />{assignee?.name ?? '—'}</div></div><div><span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '11.5px', marginBottom: '4px' }}>Description</span><span style={{ color: 'var(--text-secondary)', lineHeight: 1.5 }}>{task.description || 'No description provided.'}</span></div><div><span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '11.5px', marginBottom: '4px' }}>Previous revisions</span><strong>{task.revisionCount}</strong></div></div></section>
+            <section style={{ background: '#FFF', border: '1px solid var(--border)', borderRadius: '14px', padding: '20px' }}><h2 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '12px' }}>Submission history</h2>{submissions.map((submission) => <div key={submission.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', padding: '9px 0', borderBottom: '1px solid var(--border-light)', fontSize: '12.5px' }}><span>Version {submission.version}</span><span style={{ color: submission.id === latest?.id ? 'var(--primary)' : 'var(--text-muted)', fontWeight: submission.id === latest?.id ? 600 : 500 }}>{submission.id === latest?.id ? 'Current' : submission.submittedAt.slice(0, 10)}</span></div>)}</section>
+          </aside>
         </div>
 
-        {/* Decision Modal */}
-        {decisionModalOpen && (
-          <ReviewDecisionModal
-            taskTitle={task?.title || 'Task'}
-            onClose={() => setDecisionModalOpen(false)}
-            onSubmit={(dec, feedback) =>
-              handleConfirmDecision(dec === 'approved' ? 'approved' : 'revision', feedback)
-            }
-          />
-        )}
-      </div>
+        {decisionModalOpen && <ReviewDecisionModal taskTitle={task.title} initialDecision={initialDecision} onClose={() => setDecisionModalOpen(false)} onSubmit={submitDecision} />}
+      </PageContainer>
     </AppLayout>
   );
 }

@@ -1,305 +1,275 @@
-import { useState } from 'react';
-import {
-  Mail,
-  Shield,
-  MapPin,
-  Calendar,
-  Edit2,
-} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Mail, Shield, Calendar, Edit2 } from 'lucide-react';
+import { signOut, sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '../../services/firebase';
 import { AppLayout, PageContainer } from '../../components/layout/AppLayout';
 import { Avatar } from '../../components/ui/Avatar';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { dataStore } from '../../services/dataService';
-import type { Task, Project } from '../../types';
+import { useAppDispatch } from '../../redux/hooks';
+import { setSession, clearSession } from '../../redux/sessionSlice';
+import type { Project } from '../../types';
+
+type Tab = 'personal' | 'account' | 'security' | 'preferences';
 
 export function Profile(): JSX.Element {
-  const activeUser = dataStore.getActiveUser();
-  const allTasks: Task[] = dataStore.getTasks();
-  const allProjects: Project[] = dataStore.getProjects();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const [tab, setTab] = useState<Tab>('personal');
+  const [, setTick] = useState(0);
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [department, setDepartment] = useState('');
+  const [bio, setBio] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
+  const [error, setError] = useState('');
+  const [saved, setSaved] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
-  const userTasks = allTasks.filter((t: Task) => t.assigneeId === activeUser.uid);
-  const completedCount = userTasks.filter((t: Task) => t.status === 'approved').length;
-  const inProgressCount = userTasks.filter(
-    (t: Task) => t.status === 'in_progress' || t.status === 'submitted' || t.status === 'in_review'
-  ).length;
+  useEffect(() => dataStore.subscribe(() => setTick((t) => t + 1)), []);
+  const me = dataStore.getActiveUser();
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [userName] = useState(activeUser.name);
-  const [userRoleTitle] = useState(
-    activeUser.role === 'manager'
-      ? 'Senior Technical Project Lead'
-      : activeUser.role === 'client'
-      ? 'Product Sponsor & Enterprise Director'
-      : activeUser.role === 'assignee'
-      ? 'Full-Stack Software Engineer'
-      : 'Principal Quality & Design Reviewer'
-  );
+  useEffect(() => {
+    if (!editing) {
+      setName(me.name);
+      setPhone(me.phone ?? '');
+      setDepartment(me.department ?? '');
+      setBio(me.bio ?? '');
+      setJobTitle(me.jobTitle ?? '');
+    }
+  }, [me.uid, me.name, me.phone, me.department, me.bio, me.jobTitle, editing]);
+
+  const allProjects = dataStore.getProjects();
+  const allTasks = dataStore.getTasks();
+  const allReqs = dataStore.getRequirements();
+  const allFeedback = dataStore.getFeedbacks();
+
+  const myTasks = allTasks.filter((t) => t.assigneeId === me.uid || t.reviewerId === me.uid);
+  const approvedCount = myTasks.filter((t) => t.status === 'approved').length;
+  const activeCount = myTasks.filter((t) => t.status !== 'approved').length;
+  const conflicted = myTasks.filter((t) => t.conflictWith.length > 0).length;
+  const approvalRate = myTasks.length === 0 ? 0 : Math.round((approvedCount / myTasks.length) * 100);
+  const conflictRate = myTasks.length === 0 ? 0 : Math.round((conflicted / myTasks.length) * 100);
+  const myProjects: Project[] = allProjects.slice(0, 4);
+
+  async function save(): Promise<void> {
+    setError('');
+    if (name.trim() === '') { setError('Name cannot be empty.'); return; }
+    try {
+      await dataStore.updateProfile(me.uid, {
+        name: name.trim(), phone: phone.trim(), department: department.trim(),
+        bio: bio.trim(), jobTitle: jobTitle.trim(),
+      });
+      dispatch(setSession({ uid: me.uid, email: me.email, name: name.trim(), role: me.role }));
+      setEditing(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Save failed. Try again.');
+    }
+  }
+
+  async function sendReset(): Promise<void> {
+    setError('');
+    try {
+      await sendPasswordResetEmail(auth, me.email);
+      setResetSent(true);
+    } catch {
+      setError('Could not send reset email. Try again.');
+    }
+  }
+
+  async function logout(): Promise<void> {
+    await signOut(auth);
+    dispatch(clearSession());
+    navigate('/login');
+  }
 
   return (
-    <AppLayout role={activeUser.role}>
+    <AppLayout role={me.role}>
       <PageContainer>
-        {/* Profile Header Card matching Reference Image 4 screen 4 */}
-        <div
-          style={{
-            background: '#FFFFFF',
-            border: '1px solid var(--border-color)',
-            borderRadius: '16px',
-            overflow: 'hidden',
-            boxShadow: 'var(--shadow-sm)',
-            marginBottom: '24px',
-          }}
-        >
-          {/* Cover Banner */}
-          <div
-            style={{
-              height: '140px',
-              background: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%)',
-              position: 'relative',
-            }}
-          />
-
-          {/* Profile Details Banner */}
-          <div
-            style={{
-              padding: '0 32px 32px 32px',
-              position: 'relative',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-end',
-              flexWrap: 'wrap',
-              gap: '20px',
-            }}
-          >
+        <div style={{ background: '#FFFFFF', border: '1px solid var(--border-color)', borderRadius: '16px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', marginBottom: '24px' }}>
+          <div style={{ height: '140px', background: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%)', position: 'relative' }} />
+          <div style={{ padding: '0 32px 32px 32px', position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '20px', marginTop: '-50px' }}>
-              <div
-                style={{
-                  border: '4px solid #FFFFFF',
-                  borderRadius: '50%',
-                  background: '#FFFFFF',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                }}
-              >
-                <Avatar name={userName} src={activeUser.avatar} size="xl" />
+              <div style={{ border: '4px solid #FFFFFF', borderRadius: '50%', background: '#FFFFFF', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                <Avatar name={me.name !== '' && me.name !== me.email ? me.name : me.email} size="xl" />
               </div>
               <div style={{ paddingBottom: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <h1 style={{ fontSize: '24px', fontWeight: 700, margin: 0 }}>{userName}</h1>
-                  <span
-                    style={{
-                      background: '#EEF2FF',
-                      color: 'var(--primary-700)',
-                      padding: '3px 10px',
-                      borderRadius: '9999px',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    {activeUser.role}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <h1 style={{ fontSize: '24px', fontWeight: 700, margin: 0 }}>
+                    {me.name !== '' && me.name !== me.email ? me.name : '—'}
+                  </h1>
+                  <span style={{ background: '#EEF2FF', color: 'var(--primary-700)', padding: '3px 10px', borderRadius: '9999px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase' }}>
+                    {me.role}
                   </span>
                 </div>
                 <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
-                  {userRoleTitle} • TaskOrbit Core Team
+                  {me.email}
                 </p>
+                {(me.name === '' || me.name === me.email) && !editing && (
+                  <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: '#D97706', fontWeight: 600 }}>
+                    ⚠ Profile incomplete — click &ldquo;Edit Profile&rdquo; to add your name.
+                  </p>
+                )}
               </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px', paddingBottom: '8px' }}>
-              <button
-                onClick={() => setIsEditing(!isEditing)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border-color)',
-                  background: '#FFFFFF',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                <Edit2 size={14} />
-                <span>{isEditing ? 'Save Profile' : 'Edit Profile'}</span>
-              </button>
             </div>
           </div>
         </div>
 
-        {/* 2-Column Info & Stats Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: '24px' }}>
-          {/* Left Column: Personal Information */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid var(--border-color)',
-                borderRadius: '14px',
-                padding: '24px',
-                boxShadow: 'var(--shadow-sm)',
-              }}
-            >
-              <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 16px 0' }}>
-                Account Information
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Mail size={16} color="var(--text-muted)" />
-                  <div>
-                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>
-                      Email Address
-                    </span>
-                    <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {activeUser.email}
-                    </span>
-                  </div>
-                </div>
+        <div style={{ display: 'flex', gap: '8px', margin: '0 0 24px 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+          {([['personal', 'Personal Info'], ['account', 'Account'], ['security', 'Security'], ['preferences', 'Preferences']] as Array<[Tab, string]>).map(([t, label]) => (
+            <button key={t} onClick={() => setTab(t)}
+              style={{ padding: '8px 16px', borderRadius: '8px', background: tab === t ? '#EEF2FF' : 'transparent', color: tab === t ? 'var(--primary-700)' : 'var(--text-secondary)', border: 'none', fontSize: '13.5px', fontWeight: tab === t ? 600 : 500, cursor: 'pointer' }}>
+              {label}
+            </button>
+          ))}
+        </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Shield size={16} color="var(--text-muted)" />
-                  <div>
-                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>
-                      Access Role
-                    </span>
-                    <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {activeUser.role.charAt(0).toUpperCase() + activeUser.role.slice(1)} Privilege
-                    </span>
-                  </div>
-                </div>
+        {tab === 'personal' && (
+          <div style={{ background: '#FFFFFF', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '24px', maxWidth: '800px' }}>
+            {(
+              [
+                ['Full Name', name, setName],
+                ['Phone Number', phone, setPhone],
+                ['Department', department, setDepartment],
+                ['Job Title', jobTitle, setJobTitle],
+              ] as Array<[string, string, (v: string) => void]>
+            ).map(([label, value, setter]) => (
+              <div key={label} style={{ marginBottom: '12px' }}>
+                <label style={{ fontSize: '12.5px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>{label}</label>
+                <input value={value} disabled={!editing} onChange={(e) => setter(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '13.5px', boxSizing: 'border-box' }} />
+              </div>
+            ))}
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ fontSize: '12.5px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Bio</label>
+              <textarea value={bio} disabled={!editing} onChange={(e) => setBio(e.target.value)} rows={3}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '13.5px', boxSizing: 'border-box' }} />
+            </div>
+            {error !== '' && <p role="alert" style={{ color: '#EF4444', fontSize: '13px' }}>{error}</p>}
+            {saved && <p style={{ color: '#15803D', fontSize: '13px' }}>Profile saved.</p>}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              {editing && <button onClick={() => setEditing(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', background: '#fff', cursor: 'pointer' }}>Cancel</button>}
+              <button onClick={() => { if (editing) { void save(); } else { setEditing(true); } }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--primary-600)', color: '#fff', cursor: 'pointer' }}>
+                <Edit2 size={14} /> {editing ? 'Save Changes' : 'Edit Profile'}
+              </button>
+            </div>
+          </div>
+        )}
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <MapPin size={16} color="var(--text-muted)" />
-                  <div>
-                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>
-                      Location & Timezone
-                    </span>
-                    <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      San Francisco, CA (UTC-7)
-                    </span>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Calendar size={16} color="var(--text-muted)" />
-                  <div>
-                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>
-                      Joined TaskOrbit
-                    </span>
-                    <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      January 2025
-                    </span>
-                  </div>
-                </div>
+        {tab === 'account' && (
+          <div style={{ background: '#FFFFFF', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '24px', maxWidth: '800px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Mail size={16} color="var(--text-muted)" />
+              <div>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Email Address</span>
+                <span style={{ fontSize: '13.5px', fontWeight: 600 }}>{me.email}</span>
               </div>
             </div>
-
-            {/* Performance Snapshot */}
-            <div
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid var(--border-color)',
-                borderRadius: '14px',
-                padding: '24px',
-                boxShadow: 'var(--shadow-sm)',
-              }}
-            >
-              <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 16px 0' }}>
-                Performance Metrics
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>
-                    Active Tasks
-                  </span>
-                  <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary-600)' }}>
-                    {inProgressCount || 4}
-                  </span>
-                </div>
-                <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>
-                    Completed
-                  </span>
-                  <span style={{ fontSize: '20px', fontWeight: 700, color: '#10B981' }}>
-                    {completedCount || 18}
-                  </span>
-                </div>
-                <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>
-                    Review Rate
-                  </span>
-                  <span style={{ fontSize: '20px', fontWeight: 700, color: '#6366F1' }}>
-                    94.2%
-                  </span>
-                </div>
-                <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>
-                    Conflict Rate
-                  </span>
-                  <span style={{ fontSize: '20px', fontWeight: 700, color: '#10B981' }}>
-                    0.0%
-                  </span>
-                </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Shield size={16} color="var(--text-muted)" />
+              <div>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Access Role</span>
+                <span style={{ fontSize: '13.5px', fontWeight: 600 }}>{me.role} (set by your manager)</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Calendar size={16} color="var(--text-muted)" />
+              <div>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Member Since</span>
+                <span style={{ fontSize: '13.5px', fontWeight: 600 }}>{me.createdAt.slice(0, 10)}</span>
               </div>
             </div>
           </div>
+        )}
 
-          {/* Right Column: Projects & Assigned Activities */}
-          <div
-            style={{
-              background: '#FFFFFF',
-              border: '1px solid var(--border-color)',
-              borderRadius: '14px',
-              padding: '24px',
-              boxShadow: 'var(--shadow-sm)',
-            }}
-          >
-            <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 16px 0' }}>
-              Active Projects & Workstreams
+        {tab === 'security' && (
+          <div style={{ background: '#FFFFFF', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '24px', maxWidth: '800px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)' }}>Reset your password by email, or sign out of this device.</p>
+            {resetSent
+              ? <p style={{ color: '#15803D', fontSize: '13px' }}>Reset link sent to {me.email}.</p>
+              : <button onClick={() => { void sendReset(); }} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', background: '#fff', cursor: 'pointer', alignSelf: 'flex-start' }}>Send password reset email</button>}
+            <button onClick={() => { void logout(); }} style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', background: '#EF4444', color: '#fff', cursor: 'pointer', alignSelf: 'flex-start' }}>Sign out</button>
+            {error !== '' && <p role="alert" style={{ color: '#EF4444', fontSize: '13px' }}>{error}</p>}
+          </div>
+        )}
+
+        {tab === 'preferences' && (
+          <div style={{ background: '#FFFFFF', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '24px', maxWidth: '800px' }}>
+            <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)' }}>Workspace preferences live in Settings.</p>
+            <button onClick={() => navigate('/settings')} style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', background: 'var(--primary-600)', color: '#fff', cursor: 'pointer' }}>Open Settings</button>
+          </div>
+        )}
+
+        <div className="responsive-grid" style={{ gridTemplateColumns: '340px 1fr', gap: '24px', marginTop: '24px' }}>
+          <div style={{ background: '#FFFFFF', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '24px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 16px 0' }}>
+              {me.role === 'client' ? 'Workspace Summary' : 'Performance Metrics'}
             </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {me.role === 'client' ? (
+                <>
+                  <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Total Projects</span>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary-600)' }}>{allProjects.length}</span>
+                  </div>
+                  <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Requirements</span>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: '#10B981' }}>{allReqs.length}</span>
+                  </div>
+                  <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Feedback Sent</span>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: '#6366F1' }}>{allFeedback.length}</span>
+                  </div>
+                  <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Active Scope</span>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: '#10B981' }}>
+                      {allProjects.filter((p) => p.status === 'active' || p.status === 'on_track').length}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Active Tasks</span>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary-600)' }}>{activeCount}</span>
+                  </div>
+                  <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Completed</span>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: '#10B981' }}>{approvedCount}</span>
+                  </div>
+                  <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Approval Rate</span>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: '#6366F1' }}>{approvalRate}%</span>
+                  </div>
+                  <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Conflict Rate</span>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: '#10B981' }}>{conflictRate}%</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFFFF', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '24px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 16px 0' }}>Active Projects &amp; Workstreams</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {allProjects.slice(0, 4).map((proj: Project) => (
-                <div
-                  key={proj.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '14px 18px',
-                    borderRadius: '10px',
-                    border: '1px solid var(--border-subtle)',
-                    background: '#FAFBFD',
-                  }}
-                >
+              {myProjects.length === 0 && <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>No projects yet.</p>}
+              {myProjects.map((proj) => (
+                <div key={proj.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: '#FAFBFD' }}>
                   <div>
-                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>{proj.name}</h4>
-                    <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>
-                      Deadline: {proj.endDate} • {proj.budget}
-                    </p>
+                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>{proj.title}</h4>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>Deadline: {proj.deadline}</p>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--primary-600)' }}>
-                        {proj.progress}%
-                      </span>
-                      <div
-                        style={{
-                          width: '80px',
-                          height: '6px',
-                          borderRadius: '9999px',
-                          background: '#E2E8F0',
-                          overflow: 'hidden',
-                          marginTop: '4px',
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: `${proj.progress}%`,
-                            height: '100%',
-                            background: 'var(--primary-600)',
-                            borderRadius: '9999px',
-                          }}
-                        />
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--primary-600)' }}>{proj.progress}%</span>
+                      <div style={{ width: '80px', height: '6px', borderRadius: '9999px', background: '#E2E8F0', overflow: 'hidden', marginTop: '4px' }}>
+                        <div style={{ width: `${proj.progress}%`, height: '100%', background: 'var(--primary-600)', borderRadius: '9999px' }} />
                       </div>
                     </div>
                     <StatusBadge status={proj.status} />
