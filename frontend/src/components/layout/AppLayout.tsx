@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
-import { ToastProvider } from '../ui/Toast';
 import { CreateTaskModal } from '../modals/CreateTaskModal';
 import { CreateProjectModal } from '../modals/CreateProjectModal';
 import { dataStore } from '../../services/demoData';
@@ -23,6 +23,7 @@ export function AppLayout({
   conflictCount,
   createButtonLabel,
 }: AppLayoutProps): JSX.Element {
+  const [navigationOpen, setNavigationOpen] = useState(false);
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showCreateProject, setShowCreateProject] = useState(false);
 
@@ -39,19 +40,20 @@ export function AppLayout({
   };
 
   return (
-    <ToastProvider>
       <div className={styles.shell}>
         {/* Left Sidebar */}
-        <Sidebar role={role} conflictCount={count} />
+        <a className={styles.skipLink} href="#workspace-content">Skip to workspace</a>
+        <Sidebar role={role} conflictCount={count} open={navigationOpen} onClose={() => setNavigationOpen(false)} />
 
         {/* Main Content Viewport */}
         <div className={styles.main}>
           <Topbar
             role={role}
+            onOpenNavigation={() => setNavigationOpen(true)}
             onOpenCreateModal={handleOpenCreate}
             createButtonLabel={createButtonLabel}
           />
-          <main className={styles.content}>{children}</main>
+          <main id="workspace-content" tabIndex={-1} className={styles.content}>{children}</main>
         </div>
 
         {/* Global Modals */}
@@ -62,12 +64,12 @@ export function AppLayout({
           <CreateProjectModal onClose={() => setShowCreateProject(false)} />
         )}
       </div>
-    </ToastProvider>
   );
 }
 
 export function PageContainer({ children }: { children: React.ReactNode }): JSX.Element {
-  return <div className={styles.page}>{children}</div>;
+  const { pathname } = useLocation();
+  return <div key={pathname} className={styles.page}>{children}</div>;
 }
 
 export function PageHeader({
