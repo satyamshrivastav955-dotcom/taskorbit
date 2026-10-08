@@ -4,9 +4,25 @@ function day(v: string | Date): Date {
   return v instanceof Date ? v : new Date(v);
 }
 
+function dateFormat(): 'in' | 'us' {
+  try {
+    const raw = localStorage.getItem('taskorbit_settings_cache');
+    if (raw !== null) {
+      const parsed = JSON.parse(raw) as { dateFormat?: string };
+      if (parsed.dateFormat === 'us') return 'us';
+    }
+  } catch {
+    // Default format when settings are unavailable.
+  }
+  return 'in';
+}
+
 export function formatDate(v: string | Date): string {
   const d = day(v);
-  return `${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mon = months[d.getMonth()];
+  if (dateFormat() === 'us') return `${mon} ${dd}, ${d.getFullYear()}`;
+  return `${dd} ${mon} ${d.getFullYear()}`;
 }
 
 export function formatDateRange(a: string | Date, b: string | Date): string {

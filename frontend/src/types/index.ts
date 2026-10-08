@@ -74,6 +74,7 @@ export interface Requirement {
   status: 'Pending' | 'In Progress' | 'Completed' | 'Under Review';
   submittedDate?: string;
   fileUrls: string[];
+  files?: Attachment[];
   createdAt: string;
 }
 
@@ -125,6 +126,7 @@ export interface Task {
   estimatedHours?: number;
   actualHours?: number;
   labels?: string[];
+  requirementIds?: string[];
   requirementsList?: string[];
   subtasks?: Subtask[];
   attachments?: Attachment[];
@@ -224,4 +226,17 @@ export interface ApiError {
     code: string;
     message: string;
   };
+}
+
+export interface ClientFeedback {
+  id: string;
+  projectId?: string;
+  response?: string;
+  clientId: string;
+  taskTitle: string;
+  projectTitle: string;
+  comment: string;
+  status: 'Pending' | 'In Progress' | 'Resolved';
+  repliesCount: number;
+  createdAt: string;
 }
