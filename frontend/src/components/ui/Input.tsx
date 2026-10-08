@@ -21,13 +21,15 @@ export function Input({ label, error, id, required, hint, className, ...rest }: 
         id={fieldId}
         className={`${styles.input} ${hasError ? styles.errorInput : ''} ${className ?? ''}`}
         aria-invalid={hasError}
-        aria-describedby={hasError ? `${fieldId}-error` : undefined}
+        aria-required={required}
+        aria-describedby={hasError ? `${fieldId}-error` : hint !== undefined && hint !== '' ? `${fieldId}-hint` : undefined}
+        required={required}
         {...rest}
       />
       {hasError ? (
         <span id={`${fieldId}-error`} className={styles.error} role="alert">{error}</span>
       ) : hint !== undefined && hint !== '' ? (
-        <span className={styles.error} style={{ color: 'var(--text-muted)' }}>{hint}</span>
+        <span id={`${fieldId}-hint`} className={styles.hint}>{hint}</span>
       ) : null}
     </div>
   );

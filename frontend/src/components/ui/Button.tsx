@@ -21,9 +21,11 @@ export function Button({
       className={`${styles.btn} ${styles[variant]} ${className ?? ''}`}
       disabled={disabled === true || pending}
       aria-disabled={disabled === true || pending}
+      aria-busy={pending}
       {...rest}
     >
-      {pending ? 'Saving...' : children}
+      {pending ? <span className={styles.spinner} aria-hidden="true" /> : null}
+      {pending ? 'Saving…' : children}
     </button>
   );
 }
