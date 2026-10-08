@@ -11,3 +11,10 @@ export function RequireRole({ role }: { role: Role }): JSX.Element {
   if (session.role !== role) return <Navigate to={home[session.role as Role] ?? '/login'} replace />;
   return <Outlet />;
 }
+
+export function RequireAuth(): JSX.Element {
+  const session = useAppSelector((s) => s.session);
+  if (!session.ready) return <p>Loading…</p>;
+  if (session.uid === '') return <Navigate to="/login" replace />;
+  return <Outlet />;
+}
