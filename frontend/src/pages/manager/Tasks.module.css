@@ -119,7 +119,7 @@
 
 .boardGrid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(220px, 1fr));
+  grid-template-columns: repeat(6, minmax(220px, 1fr));
   gap: 16px;
   flex: 1;
   overflow-x: auto;
@@ -518,7 +518,7 @@
   }
 
   .boardGrid {
-    grid-template-columns: repeat(5, minmax(190px, 1fr));
+    grid-template-columns: repeat(6, minmax(190px, 1fr));
   }
 
   .drawer {

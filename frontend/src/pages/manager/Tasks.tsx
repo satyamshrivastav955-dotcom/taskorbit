@@ -69,6 +69,7 @@ export function ManagerTasks(): JSX.Element {
   const columns: { status: TaskStatus; label: string; count: number }[] = [
     { status: 'todo', label: 'To Do', count: filteredTasks.filter((t) => t.status === 'todo').length },
     { status: 'in_progress', label: 'In Progress', count: filteredTasks.filter((t) => t.status === 'in_progress').length },
+    { status: 'submitted', label: 'Submitted', count: filteredTasks.filter((t) => t.status === 'submitted').length },
     { status: 'in_review', label: 'In Review', count: filteredTasks.filter((t) => t.status === 'in_review').length },
     { status: 'revision', label: 'Revision', count: filteredTasks.filter((t) => t.status === 'revision').length },
     { status: 'approved', label: 'Completed', count: filteredTasks.filter((t) => t.status === 'approved').length },

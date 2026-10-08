@@ -22,6 +22,8 @@ import { Avatar, AvatarGroup } from '../../components/ui/Avatar';
 import { dataStore } from '../../services/demoData';
 import styles from './Projects.module.css';
 
+const activeProjectStatuses = ['active', 'on_track', 'at_risk', 'delayed'];
+
 export function ManagerProjects(): JSX.Element {
   const navigate = useNavigate();
   const [, setTick] = useState(0);
@@ -43,7 +45,7 @@ export function ManagerProjects(): JSX.Element {
   const error = dataStore.getError();
 
   // Counts
-  const activeCount = projects.filter((p) => p.status === 'on_track' || p.status === 'active').length;
+  const activeCount = projects.filter((p) => activeProjectStatuses.includes(p.status)).length;
   const submittedCount = projects.filter((p) => p.status === 'submitted' || p.status === 'draft').length;
   const completedCount = projects.filter((p) => p.status === 'completed').length;
 
@@ -53,7 +55,7 @@ export function ManagerProjects(): JSX.Element {
       (p.clientName || '').toLowerCase().includes(searchQuery.toLowerCase());
 
     if (!matchesSearch) return false;
-    if (filterTab === 'active') return p.status === 'on_track' || p.status === 'active';
+    if (filterTab === 'active') return activeProjectStatuses.includes(p.status);
     if (filterTab === 'submitted') return p.status === 'submitted' || p.status === 'draft';
     if (filterTab === 'completed') return p.status === 'completed';
     return true;
