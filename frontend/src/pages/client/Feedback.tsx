@@ -149,8 +149,8 @@ export function ClientFeedback(): JSX.Element {
                     </div>
                     <span
                       style={{
-                        background: fb.status === 'Resolved' ? '#DCFCE7' : fb.status === 'In Progress' ? '#EEF2FF' : '#FEF3C7',
-                        color: fb.status === 'Resolved' ? '#16A34A' : fb.status === 'In Progress' ? '#4F46E5' : '#D97706',
+                         background: fb.status === 'Resolved' ? 'var(--sage-wash)' : fb.status === 'In Progress' ? 'var(--gold-wash)' : 'var(--terracotta-wash)',
+                         color: fb.status === 'Resolved' ? 'var(--forest)' : fb.status === 'In Progress' ? '#856921' : 'var(--red-700)',
                         padding: '2px 8px',
                         borderRadius: '9999px',
                         fontSize: '11px',

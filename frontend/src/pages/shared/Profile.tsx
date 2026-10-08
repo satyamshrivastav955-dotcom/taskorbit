@@ -91,7 +91,7 @@ export function Profile(): JSX.Element {
     <AppLayout role={me.role}>
       <PageContainer>
         <div style={{ background: '#FFFFFF', border: '1px solid var(--border-color)', borderRadius: '16px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', marginBottom: '24px' }}>
-          <div style={{ height: '140px', background: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%)', position: 'relative' }} />
+          <div style={{ height: '140px', background: 'var(--forest)', position: 'relative' }} />
           <div style={{ padding: '0 32px 32px 32px', position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '20px', marginTop: '-50px' }}>
               <div style={{ border: '4px solid #FFFFFF', borderRadius: '50%', background: '#FFFFFF', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
@@ -102,7 +102,7 @@ export function Profile(): JSX.Element {
                   <h1 style={{ fontSize: '24px', fontWeight: 700, margin: 0 }}>
                     {me.name !== '' && me.name !== me.email ? me.name : '—'}
                   </h1>
-                  <span style={{ background: '#EEF2FF', color: 'var(--primary-700)', padding: '3px 10px', borderRadius: '9999px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase' }}>
+                   <span style={{ background: 'var(--sage-wash)', color: 'var(--forest-dark)', padding: '3px 10px', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase' }}>
                     {me.role}
                   </span>
                 </div>
