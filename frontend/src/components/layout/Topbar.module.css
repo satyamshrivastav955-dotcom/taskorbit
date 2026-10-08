@@ -2,19 +2,19 @@
   position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between;
   min-height: 4.25rem; padding: 0 clamp(1rem, 3.2vw, 3.5rem); color: var(--text-primary);
   background: var(--surface); border-bottom: 1px solid var(--border);
-  box-shadow: 0 0.3rem 1.3rem rgba(16, 24, 40, 0.035);
+  box-shadow: 0 1px 0 rgba(15, 26, 43, 0.02);
 }
 .searchWrapper { position: relative; display: flex; align-items: center; gap: 0.65rem; width: min(27rem, 42vw); padding: 0.61rem 0.9rem; border: 1px solid var(--border); border-radius: var(--radius-full); background: var(--surface-pill); transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast); }
-.searchWrapper:focus-within { border-color: var(--primary); background: var(--surface); box-shadow: 0 0 0 0.25rem rgba(76, 91, 212, 0.12); }
+.searchWrapper:focus-within { border-color: var(--cyan-500); background: var(--surface); box-shadow: 0 0 0 0.25rem rgba(53, 185, 194, 0.13); }
 .searchIcon { flex: 0 0 auto; color: var(--text-tertiary); }
 .searchInput { width: 100%; min-width: 0; padding: 0; color: var(--text-primary); border: 0; outline: 0; background: transparent; font-size: 0.79rem; }
 .searchInput::placeholder { color: var(--text-tertiary); }
 .actions { display: flex; align-items: center; gap: 0.65rem; }
-.createBtn { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 2.35rem; padding: 0 0.9rem; color: #fff; border: 1px solid rgba(54, 65, 174, 0.55); border-radius: 0.68rem; background: var(--primary); box-shadow: 0 0.4rem 0.9rem rgba(69, 80, 195, 0.18); font-size: 0.77rem; font-weight: 750; transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast); }
-.createBtn:hover { filter: brightness(1.04); box-shadow: 0 0.62rem 1.2rem rgba(69, 80, 195, 0.26); transform: translateY(-1px); }
+.createBtn { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 2.35rem; padding: 0 0.9rem; color: #fff; border: 1px solid var(--blue-600); border-radius: 0.58rem; background: var(--blue-600); box-shadow: 0 0.35rem 0.8rem rgba(76, 91, 212, 0.16); font-size: 0.77rem; font-weight: 750; transition: background var(--transition-fast), box-shadow var(--transition-fast); }
+.createBtn:hover { background: var(--blue-700); box-shadow: 0 0.5rem 1rem rgba(76, 91, 212, 0.22); }
 .createBtn:active { transform: translateY(0); }
 .iconBtn { position: relative; display: grid; place-items: center; width: 2.35rem; height: 2.35rem; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 0.68rem; background: var(--surface); transition: color var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast); }
-.iconBtn:hover { color: var(--text-primary); border-color: var(--border-strong); background: var(--surface-hover); transform: translateY(-1px); }
+.iconBtn:hover { color: var(--text-primary); border-color: var(--cyan-500); background: var(--surface-hover); }
 .unreadDot { position: absolute; top: 0.4rem; right: 0.4rem; width: 0.42rem; height: 0.42rem; border: 2px solid var(--surface); border-radius: 50%; background: var(--red-500); }
 .profileWrapper { position: relative; }
 .profilePill { display: flex; align-items: center; gap: 0.55rem; min-height: 2.55rem; padding: 0.2rem 0.6rem 0.2rem 0.25rem; color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-full); background: var(--surface); transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast); }

@@ -7,7 +7,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   color: #adbad0;
-  background: #111d31;
+  background: var(--navy-900);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   user-select: none;
 }
@@ -16,8 +16,8 @@
 .logoIcon {
   width: 2.2rem; height: 2.2rem; flex: 0 0 2.2rem; display: grid; place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.19); border-radius: 0.72rem;
-  background: #4f5bd5;
-  box-shadow: 0 0.65rem 1.5rem rgba(62, 75, 190, 0.3);
+  background: var(--blue-600);
+  box-shadow: 0 0.55rem 1.25rem rgba(76, 91, 212, 0.22);
 }
 .logoIcon svg { width: 1.35rem; height: 1.35rem; }
 .brandTitle { color: #f8faff; font-size: 1.04rem; font-weight: 750; letter-spacing: -0.035em; }
@@ -27,7 +27,7 @@
   text-align: left; color: inherit; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 0.78rem;
   background: rgba(255, 255, 255, 0.045); transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
 }
-.userCard:hover { border-color: rgba(151, 164, 255, 0.38); background: rgba(255, 255, 255, 0.09); transform: translateY(-1px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,.12); }
+.userCard:hover { border-color: rgba(53, 185, 194, 0.5); background: rgba(255, 255, 255, 0.09); }
 .userInfo { min-width: 0; display: flex; flex: 1; flex-direction: column; }
 .userName { overflow: hidden; color: #f7f9ff; font-size: 0.79rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .userRole { color: #8e9cb5; font-size: 0.67rem; font-weight: 600; letter-spacing: 0.02em; }
@@ -41,10 +41,10 @@
 .navItem:hover, .bottomNavItem:hover { color: #f8faff; background: rgba(255, 255, 255, 0.075); }
 .navItem:active, .bottomNavItem:active { transform: scale(0.985); }
 .navItem.active, .bottomNavItem.active {
-  color: #fff; background: rgba(73, 86, 194, 0.95);
-  box-shadow: 0 0.5rem 1.05rem rgba(40, 51, 137, 0.24); font-weight: 700;
+  color: #fff; background: rgba(53, 185, 194, 0.12);
+  box-shadow: inset 3px 0 0 var(--cyan-500); font-weight: 700;
 }
-.navItem.active::before { content: ''; position: absolute; left: -0.7rem; width: 0.18rem; height: 1.35rem; border-radius: 0 0.25rem 0.25rem 0; background: #a2acff; }
+.navItem.active::before { display: none; }
 .badgeDanger { margin-left: auto; min-width: 1.25rem; padding: 0.12rem 0.4rem; color: #fff; background: #ca5966; border-radius: var(--radius-full); font-size: 0.65rem; font-weight: 800; text-align: center; }
 .bottomNav { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.85rem 0.7rem 0.95rem; border-top: 1px solid rgba(255, 255, 255, 0.08); }
 .navBackdrop, .mobileClose { display: none; }

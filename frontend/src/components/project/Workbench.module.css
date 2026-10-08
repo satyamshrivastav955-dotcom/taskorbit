@@ -1,9 +1,9 @@
-.eyebrow { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; color: var(--text-secondary); font-size: .74rem; margin-bottom: -.8rem; }
-.orbitDot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 4px var(--primary-50); margin-right: .2rem; }
+.eyebrow { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; color: var(--text-secondary); font-size: .74rem; margin-bottom: -.8rem; letter-spacing: .01em; }
+.orbitDot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan-500); box-shadow: 0 0 0 4px rgba(53, 185, 194, .13); margin-right: .2rem; animation: statusPulse 2.4s ease-in-out infinite; }
 .divider { color: var(--border-strong); }
-.secondaryAction { display: inline-flex; align-items: center; gap: .6rem; min-height: 2.4rem; padding: 0 .9rem; border: 1px solid var(--border); border-radius: .6rem; color: var(--text-primary); background: var(--surface); font-size: .78rem; font-weight: 600; box-shadow: var(--shadow-sm); transition: background var(--transition-fast), border-color var(--transition-fast); }
-.secondaryAction:hover { background: var(--surface-hover); color: var(--text-primary); border-color: var(--border-strong); }
-.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--border); background: var(--surface); border-radius: .9rem; padding: 1.25rem 0; }
+.secondaryAction { display: inline-flex; align-items: center; gap: .6rem; min-height: 2.4rem; padding: 0 .9rem; border: 1px solid var(--border); border-radius: .58rem; color: var(--text-primary); background: var(--surface); font-size: .78rem; font-weight: 600; box-shadow: var(--shadow-sm); transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast); }
+.secondaryAction:hover { background: var(--surface-hover); color: var(--blue-700); border-color: var(--cyan-500); }
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--border); background: var(--surface); border-radius: .75rem; padding: 1.25rem 0; animation: panelIn 480ms var(--ease-out) both; }
 .metric { display: flex; flex-direction: column; gap: .35rem; padding: .1rem 1.5rem; border-right: 1px solid var(--border-light); }
 .metric:last-child { border-right: 0; }
 .metricLabel { font-size: .76rem; font-weight: 500; color: var(--text-secondary); }
@@ -11,18 +11,18 @@
 .metricHint { font-size: .68rem; color: var(--text-muted); }
 .columns { display: grid; grid-template-columns: minmax(0, 1fr) 20rem; gap: 1.5rem; align-items: start; }
 .primaryColumn, .secondaryColumn { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
-.panel { min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: .9rem; overflow: hidden; box-shadow: var(--shadow-sm); }
+.panel { min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; overflow: hidden; box-shadow: var(--shadow-sm); animation: panelIn 520ms 80ms var(--ease-out) both; }
 .panelHead { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: 1.2rem 1.35rem; border-bottom: 1px solid var(--border-light); }
 .panelHead h2 { font-size: .92rem; font-weight: 650; letter-spacing: -.02em; }
 .panelHead p { margin: .28rem 0 0; color: var(--text-muted); font-size: .72rem; }
 .textAction { display: inline-flex; align-items: center; gap: .4rem; flex-shrink: 0; font-size: .73rem; font-weight: 600; }
-.projectRow, .taskRow { display: flex; align-items: center; gap: 1rem; padding: 1.05rem 1.35rem; color: var(--text-primary); border-bottom: 1px solid var(--border-light); transition: background var(--transition-fast); animation: fadeUp 250ms ease both; }
+.projectRow, .taskRow { display: flex; align-items: center; gap: 1rem; padding: 1.05rem 1.35rem; color: var(--text-primary); border-bottom: 1px solid var(--border-light); transition: background var(--transition-fast), border-color var(--transition-fast); animation: fadeUp 250ms ease both; }
 .projectRow:last-child, .taskRow:last-child { border-bottom: 0; }
 .projectRow:hover, .taskRow:hover { background: var(--bg-hover); color: var(--text-primary); }
 .projectRow:nth-child(2), .taskRow:nth-child(2) { animation-delay: 25ms; }
 .projectRow:nth-child(3), .taskRow:nth-child(3) { animation-delay: 50ms; }
 .projectRow:nth-child(4), .taskRow:nth-child(4) { animation-delay: 75ms; }
-.projectIcon { display: grid; place-items: center; flex: 0 0 2.1rem; width: 2.1rem; height: 2.1rem; color: var(--primary); background: var(--primary-50); border-radius: .55rem; }
+.projectIcon { display: grid; place-items: center; flex: 0 0 2.1rem; width: 2.1rem; height: 2.1rem; color: var(--blue-600); background: #e8efff; border-radius: .55rem; }
 .projectInfo, .taskInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .25rem; }
 .projectInfo strong, .taskInfo strong { font-size: .8rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .projectInfo > span, .taskInfo > span { color: var(--text-muted); font-size: .7rem; }
@@ -52,16 +52,19 @@
 .quietState { display: flex; flex-direction: column; align-items: flex-start; gap: .5rem; padding: 1.5rem 1.25rem; color: var(--text-muted); }
 .quietState strong { font-size: .78rem; color: var(--text-secondary); }
 .quietState p { margin: 0; font-size: .72rem; line-height: 1.6; }
-.intake { padding: 1.5rem; border: 1px solid var(--border); background: #eef1fb; border-radius: .9rem; display: flex; gap: 1.2rem; justify-content: space-between; align-items: center; }
-.smallLabel { font-size: .66rem; color: var(--primary-hover); font-weight: 600; }
+.intake { padding: 1.5rem; border: 1px solid var(--border); background: var(--surface-muted); border-radius: .75rem; display: flex; gap: 1.2rem; justify-content: space-between; align-items: center; animation: panelIn 520ms 120ms var(--ease-out) both; }
+.smallLabel { font-size: .66rem; color: var(--blue-700); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .intake h2 { margin: .5rem 0; font-size: 1.12rem; }
 .intake p { color: var(--text-secondary); font-size: .76rem; margin: 0; max-width: 36ch; }
 .intakeActions { display: flex; flex-direction: column; gap: .6rem; flex-shrink: 0; }
 .intakeActions a { display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); border-radius: .5rem; padding: .65rem .75rem; font-size: .74rem; font-weight: 600; }
 .intakeActions a:hover { border-color: var(--primary); }
-.error { display: flex; align-items: center; gap: .7rem; border: 1px solid #edc5cc; background: #fff6f7; color: var(--red-700); padding: .85rem 1rem; border-radius: .75rem; font-size: .78rem; }
+.error { display: flex; align-items: center; gap: .7rem; border: 1px solid #edc5cc; background: #fff6f7; color: var(--red-700); padding: .85rem 1rem; border-radius: .6rem; font-size: .78rem; animation: panelIn 360ms var(--ease-out) both; }
 .error svg { flex-shrink: 0; }
 .error button { margin-left: auto; white-space: nowrap; color: var(--red-700); text-decoration: underline; }
+@keyframes panelIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes statusPulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(53, 185, 194, .12); } 50% { box-shadow: 0 0 0 7px rgba(53, 185, 194, .03); } }
+@media (prefers-reduced-motion: reduce) { .metrics, .panel, .intake, .error, .orbitDot { animation: none; } }
 @media (max-width: 1180px) { .columns { grid-template-columns: minmax(0, 1fr) 18rem; gap: 1rem; } .projectProgress { display: none; } .metric { padding-inline: 1rem; } }
 @media (max-width: 1000px) { .columns { grid-template-columns: 1fr; } .secondaryColumn { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); align-items: start; } }
 @media (max-width: 640px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: .5rem 0; } .metric { padding: .8rem 1rem; } .metric:nth-child(2) { border-right: 0; } .metricHint { display: none; } .metricValue { font-size: 1.55rem; } .columns { gap: 1rem; } .panelHead, .projectRow, .taskRow { padding: 1rem; } .projectRow, .taskRow { gap: .7rem; } .projectRow > .rowArrow { display: none; } .taskRow > :last-child { display: none; } .taskInfo strong, .projectInfo strong { white-space: normal; } .intake { flex-direction: column; align-items: stretch; } .intakeActions { flex-direction: row; flex-wrap: wrap; } .secondaryColumn { display: flex; } .eyebrow { font-size: .67rem; } }
