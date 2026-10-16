@@ -8,13 +8,11 @@ import { ToastProvider } from '../src/components/ui/Toast';
 import { store } from '../src/redux/store';
 import { setSession } from '../src/redux/sessionSlice';
 import { dataStore } from '../src/services/dataService';
-import { auth } from '../src/services/firebase';
 import '../src/styles/global.css';
 
 const options = new URL(import.meta.url).searchParams;
 const role = options.get('role') || 'manager';
 const path = options.get('path') || `/${role}`;
-await auth.authStateReady();
 await new Promise((resolve) => setTimeout(resolve, 50));
 const uid = `${role}-1`;
 const users = ['client', 'manager', 'assignee', 'reviewer'].map((role) => ({ uid: `${role}-1`, name: `${role[0].toUpperCase() + role.slice(1)} One`, email: `${role}@example.test`, role, createdAt: '2026-10-01' }));

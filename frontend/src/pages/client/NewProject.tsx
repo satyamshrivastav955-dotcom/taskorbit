@@ -31,13 +31,9 @@ export function NewProject(): JSX.Element {
     setPending(true);
     setError('');
     try {
-      const project = await dataStore.createProject({
-        title,
-        description,
-        priority,
-        startDate,
-        deadline,
-      });
+      const project = savedProjectId
+        ? (dataStore.getProjectById(savedProjectId) ?? await dataStore.createProject({ title, description, priority, startDate, deadline }))
+        : await dataStore.createProject({ title, description, priority, startDate, deadline });
       setSavedProjectId(project.id);
       const uploaded = file === null ? [] : await uploadFiles(
         [file],

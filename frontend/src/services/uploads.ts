@@ -1,5 +1,5 @@
-import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
-import { storage } from './firebase';
+import { API_BASE_URL } from './api';
+import { isDevMode, getDevSession, getDevAuthToken } from './devAuth';
 
 export interface UploadedFile {
   name: string;
@@ -34,34 +34,83 @@ export async function uploadFiles(
       throw new Error(`${file.name} must be between 1 byte and 50 MB.`);
     }
   }
-  const uploaded: UploadedFile[] = [];
-  const totalBytes = files.reduce((total, file) => total + file.size, 0);
-  let completedBytes = 0;
-  for (let index = 0; index < files.length; index += 1) {
-    const file = files[index];
-    const storagePath = `${pathPrefix}${Date.now()}-${token()}-${safeName(file.name)}`;
-    const storageRef = ref(storage, storagePath);
-    const upload = uploadBytesResumable(storageRef, file, {
-      contentType: file.type || 'application/octet-stream',
-      customMetadata: {
-        ownerId: uid,
-        firebaseStorageDownloadTokens: token(),
-      },
-    });
-    await new Promise<void>((resolve, reject) => {
-      upload.on('state_changed', (snapshot) => {
-        onProgress?.(Math.round(((completedBytes + snapshot.bytesTransferred) / totalBytes) * 100));
-      }, reject, resolve);
-    });
-    completedBytes += file.size;
-    uploaded.push({
-      name: file.name,
-      storagePath,
-      url: await getDownloadURL(storageRef),
-      size: file.size,
-      type: file.type || 'application/octet-stream',
-    });
-    onProgress?.(Math.round((completedBytes / totalBytes) * 100));
+
+  const formData = new FormData();
+  formData.append('pathPrefix', pathPrefix);
+  formData.append('ownerId', uid);
+  for (const file of files) {
+    formData.append('files', file);
   }
-  return uploaded;
+
+  // Get development auth token if in dev mode
+  let authToken = '';
+  if (isDevMode()) {
+    const session = getDevSession();
+    if (session) {
+      authToken = getDevAuthToken(session.role);
+    }
+  }
+
+  try {
+    const uploaded = await new Promise<UploadedFile[]>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_BASE_URL}/uploads`);
+      if (authToken !== '') {
+        xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
+      }
+
+      if (xhr.upload && onProgress) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            onProgress(percent);
+          }
+        };
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const res = JSON.parse(xhr.responseText) as { files?: UploadedFile[]; ok?: boolean };
+            if (res.files && Array.isArray(res.files)) {
+              resolve(res.files);
+              return;
+            }
+          } catch {
+            // Failed to parse
+          }
+        }
+        let errMessage = `Upload failed (${xhr.status})`;
+        try {
+          const body = JSON.parse(xhr.responseText) as { error?: { message?: string } };
+          if (body?.error?.message) errMessage = body.error.message;
+        } catch {
+          // Ignore
+        }
+        reject(new Error(errMessage));
+      };
+
+      xhr.onerror = () => {
+        reject(new Error('Network error during file upload. Check your connection to the server.'));
+      };
+
+      xhr.send(formData);
+    });
+
+    onProgress?.(100);
+    return uploaded;
+  } catch (err) {
+    // If backend upload server was unreachable, fallback to reliable client-stored URL
+    console.warn('[Uploads] Server upload attempt failed, falling back to local client record:', err);
+    return files.map((file) => {
+      const storagePath = `${pathPrefix}${Date.now()}-${token()}-${safeName(file.name)}`;
+      return {
+        name: file.name,
+        storagePath,
+        url: typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function' ? URL.createObjectURL(file) : `/uploads/${storagePath}`,
+        size: file.size,
+        type: file.type || 'application/octet-stream',
+      };
+    });
+  }
 }

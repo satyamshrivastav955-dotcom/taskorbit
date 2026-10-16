@@ -5,6 +5,7 @@ const Login = lazy(() => import('./auth/Login').then((module) => ({ default: mod
 const Register = lazy(() => import('./auth/Register').then((module) => ({ default: module.Register })));
 const Landing = lazy(() => import('./Landing').then((module) => ({ default: module.Landing })));
 const UiPreview = lazy(() => import('./UiPreview').then((module) => ({ default: module.UiPreview })));
+const ReactPlayground = lazy(() => import('./learning/ReactPlayground').then((module) => ({ default: module.ReactPlayground })));
 
 const ClientOverview = lazy(() => import('./client/Overview').then((module) => ({ default: module.ClientOverview })));
 const ClientProjects = lazy(() => import('./client/Projects').then((module) => ({ default: module.ClientProjects })));
@@ -61,11 +62,12 @@ export function AppRoutes(): JSX.Element {
   return (
     <Suspense fallback={<RouteFallback />}>
       <Routes>
-      {/* Public / Auth */}
+      {/* Public / Auth / Syllabus Demonstrations */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/landing" element={<Landing />} />
       <Route path="/ui-preview" element={<UiPreview />} />
+      <Route path="/learning/react" element={<ReactPlayground />} />
 
       {/* Shared Pages for all authenticated users */}
       <Route element={<RequireAuth />}>

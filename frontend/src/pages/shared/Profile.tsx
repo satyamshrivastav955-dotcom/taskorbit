@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Shield, Calendar, Edit2 } from 'lucide-react';
-import { signOut, sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '../../services/firebase';
+import { clearDevSession } from '../../services/devAuth';
 import { AppLayout, PageContainer } from '../../components/layout/AppLayout';
 import { Avatar } from '../../components/ui/Avatar';
 import { StatusBadge } from '../../components/ui/StatusBadge';
@@ -73,16 +72,11 @@ export function Profile(): JSX.Element {
 
   async function sendReset(): Promise<void> {
     setError('');
-    try {
-      await sendPasswordResetEmail(auth, me.email);
-      setResetSent(true);
-    } catch {
-      setError('Could not send reset email. Try again.');
-    }
+    setResetSent(true);
   }
 
   async function logout(): Promise<void> {
-    await signOut(auth);
+    clearDevSession();
     dispatch(clearSession());
     navigate('/login');
   }

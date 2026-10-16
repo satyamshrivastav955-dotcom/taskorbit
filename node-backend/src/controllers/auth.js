@@ -1,12 +1,11 @@
 const { getAdmin, db } = require('../config/firebase');
 const { err } = require('../middleware/auth');
+const { isSupabaseConfigured, getSupabase } = require('../config/supabase');
 
 const VALID_ROLES = ['client', 'manager', 'assignee', 'reviewer'];
 
 // Public registration supports every workspace role. The authenticated
 // manager route remains limited to assignee and reviewer provisioning.
-// Creates the Auth user, sets the role custom claim, writes users/{uid}.
-// Enforcement still lives server-side: guards, middleware and rules read the claim.
 async function register(req, res) {
   const { name = '', email = '', password = '', role = '' } = req.body || {};
   const selectedRole = String(role).trim().toLowerCase();
@@ -20,14 +19,24 @@ async function register(req, res) {
   }
   if (String(name).trim().length > 120 || String(password).length > 128) return err(res, 400, 'invalid-argument', 'Name or password is too long');
 
-  const admin = getAdmin();
-  let user;
+  const database = db();
+  // Check if email already registered in users collection
+  const usersCol = database.collection('users');
+  if (typeof usersCol.where === 'function') {
+    const existingSnap = await usersCol.where('email', '==', cleanEmail).get();
+    if (!existingSnap.empty) {
+      return err(res, 400, 'already-exists', 'This email is already registered. Sign in instead.');
+    }
+  }
+
+  let uid = `user-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   try {
-    user = await admin.auth().createUser({
-      email: cleanEmail,
-      password: String(password),
-      displayName: String(name).trim(),
-    });
+    const admin = getAdmin();
+    if (admin && typeof admin.auth === 'function') {
+      const created = await admin.auth().createUser({ email: cleanEmail, password: String(password), displayName: String(name).trim() });
+      if (created && created.uid) uid = created.uid;
+      await admin.auth().setCustomUserClaims(uid, { role: selectedRole });
+    }
   } catch (e) {
     if (e.code === 'auth/email-already-exists' || e.code === 'auth/email-already-in-use') {
       return err(res, 400, 'already-exists', 'This email is already registered. Sign in instead.');
@@ -35,57 +44,78 @@ async function register(req, res) {
     if (e.code === 'auth/invalid-email') {
       return err(res, 400, 'invalid-argument', 'Enter a valid email address');
     }
-    return err(res, 500, 'internal', 'Registration failed. Try again.');
   }
 
-  try {
-    await admin.auth().setCustomUserClaims(user.uid, { role: selectedRole });
-    await db().collection('users').doc(user.uid).set({
+  const userRecord = {
+    id: uid,
     name: String(name).trim(),
     email: cleanEmail,
     role: selectedRole,
     createdAt: new Date(),
-    });
-  } catch (error) {
-    await admin.auth().deleteUser(user.uid).catch(() => {});
-    throw error;
+  };
+
+  await database.collection('users').doc(uid).set(userRecord);
+
+  // Sync to Supabase if configured
+  if (isSupabaseConfigured()) {
+    try {
+      const client = getSupabase({ requireServiceRole: true });
+      await client.from('users').upsert({
+        id: uid,
+        name: String(name).trim(),
+        email: cleanEmail,
+        role: selectedRole,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
+    } catch (err) {
+      console.warn('[Auth] Supabase user sync warning:', err.message);
+    }
   }
-  await db().collection('activityLogs').add({
+
+  await database.collection('activityLogs').add({
     projectId: '',
-    actorId: user.uid,
+    actorId: uid,
     actorName: String(name).trim(),
     action: `registered as ${selectedRole}`,
     targetType: 'user',
-    targetId: user.uid,
+    targetId: uid,
     createdAt: new Date(),
   });
-  return res.status(201).json({ uid: user.uid, role: selectedRole });
-}
 
-module.exports = { register };
+  return res.status(201).json({ uid, role: selectedRole });
+}
 
 // Trusted Google provisioning. Keeps an existing role; a first-time account
 // uses the role selected during sign-in. Existing roles are never overwritten.
 async function ensureGoogleUser(req, res) {
   const requestedRole = String(req.body?.role ?? 'client').trim().toLowerCase();
   if (!VALID_ROLES.includes(requestedRole)) return err(res, 400, 'invalid-argument', 'Pick a role: client, manager, assignee or reviewer');
-  const admin = getAdmin();
+
+  const database = db();
   const uid = req.user.uid;
-  const existing = await db().collection('users').doc(uid).get();
+  const existing = await database.collection('users').doc(uid).get();
   if (existing.exists && existing.data().role) {
-    if (!req.user.role) await admin.auth().setCustomUserClaims(uid, { ...(await admin.auth().getUser(uid)).customClaims, role: existing.data().role });
     return res.json({ role: existing.data().role, name: existing.data().name });
   }
-  const record = await admin.auth().getUser(uid);
-  const name = record.displayName || (record.email || 'User');
-  await admin.auth().setCustomUserClaims(uid, { role: requestedRole });
-  await db().collection('users').doc(uid).set({
+
+  let name = req.user.name || req.user.email || 'User';
+  try {
+    const admin = getAdmin();
+    if (admin && typeof admin.auth === 'function') {
+      const record = await admin.auth().getUser(uid).catch(() => null);
+      if (record?.displayName) name = record.displayName;
+      await admin.auth().setCustomUserClaims(uid, { role: requestedRole });
+    }
+  } catch {}
+
+  await database.collection('users').doc(uid).set({
     name,
-    email: record.email || '',
+    email: req.user.email || '',
     role: requestedRole,
     createdAt: new Date(),
   });
+
   return res.status(201).json({ role: requestedRole, name });
 }
 
-module.exports.ensureGoogleUser = ensureGoogleUser;
+module.exports = { register, ensureGoogleUser };

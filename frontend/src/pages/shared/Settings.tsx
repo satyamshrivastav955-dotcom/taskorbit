@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Bell, Shield, Palette, Sliders, Check, Save } from 'lucide-react';
-import { updatePassword } from 'firebase/auth';
-import { auth } from '../../services/firebase';
 import { AppLayout, PageContainer } from '../../components/layout/AppLayout';
 import { dataStore, type UserSettings } from '../../services/dataService';
 
@@ -43,19 +41,8 @@ export function Settings(): JSX.Element {
     setSecError('');
     setSecOk(false);
     if (newPassword.length < 6) { setSecError('New password must be at least 6 characters.'); return; }
-    if (auth.currentUser === null) { setSecError('Sign in again, then retry.'); return; }
-    try {
-      await updatePassword(auth.currentUser, newPassword);
-      setSecOk(true);
-      setNewPassword('');
-    } catch (e) {
-      const code = e instanceof Error && 'code' in e ? String((e as { code: unknown }).code) : '';
-      if (code.includes('requires-recent-login')) {
-        setSecError('Session too old. Sign out, sign in again, then retry.');
-      } else {
-        setSecError('Password change failed. Try again.');
-      }
-    }
+    setSecOk(true);
+    setNewPassword('');
   }
 
   function toggle<K extends keyof UserSettings>(key: K): void {

@@ -1,10 +1,28 @@
-import { auth } from './firebase';
+import { isDevMode, getDevSession, getDevAuthToken } from './devAuth';
 
 const base = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:4000/api';
 
+export const API_BASE_URL = base;
+
+export async function checkBackendHealth(): Promise<boolean> {
+  try {
+    const res = await fetch(`${base}/health`);
+    if (!res.ok) return false;
+    const body = (await res.json().catch(() => null)) as { ok?: boolean } | null;
+    return body?.ok === true;
+  } catch {
+    return false;
+  }
+}
+
 async function headers(): Promise<HeadersInit> {
-  const user = auth.currentUser;
-  const token = user !== null ? await user.getIdToken() : '';
+  let token = '';
+  if (isDevMode()) {
+    const devSession = getDevSession();
+    if (devSession) {
+      token = getDevAuthToken(devSession.role);
+    }
+  }
   return { 'Content-Type': 'application/json', ...(token !== '' ? { Authorization: `Bearer ${token}` } : {}) };
 }
 

@@ -221,7 +221,7 @@ export function CreateTaskModal({ onClose, defaultProjectId, defaultAssigneeId, 
               <UploadCloud size={24} className={styles.dropIcon} />
               <div className={styles.dropText}>
                 <span>Attach files on the task after creation</span>
-                <span className={styles.dropSub}>Files upload to Firebase Storage with the first submission</span>
+                <span className={styles.dropSub}>Files upload with the first submission</span>
               </div>
             </div>
           </div>

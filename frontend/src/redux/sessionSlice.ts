@@ -1,6 +1,8 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { Role } from '../types';
 
+import { clearDevSession } from '../services/devAuth';
+
 interface SessionState {
   uid: string;
   email: string;
@@ -28,6 +30,7 @@ const slice = createSlice({
       state.name = '';
       state.role = '';
       state.ready = true;
+      clearDevSession();
     },
   },
 });

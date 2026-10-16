@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, isFirebaseConfigured } from '../../services/firebase';
+import { checkBackendHealth, API_BASE_URL } from '../../services/api';
+import { isDevMode } from '../../services/devAuth';
 import { useAppDispatch } from '../../redux/hooks';
 import { setSession } from '../../redux/sessionSlice';
 import { Input } from '../../components/ui/Input';
@@ -10,8 +10,6 @@ import { Button } from '../../components/ui/Button';
 import type { Role } from '../../types';
 import styles from './Login.module.css';
 import { AuthVisual } from './AuthVisual';
-
-const base = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:4000/api';
 
 const HOME: Record<Role, string> = {
   client: '/client',
@@ -40,34 +38,44 @@ export function Register(): JSX.Element {
   async function onSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     setError('');
+    if (isDevMode()) {
+      setError('Development mode active: registration is disabled. Please use the development login credentials (engineer1@taskorbit.local).');
+      return;
+    }
     const cleanEmail = email.trim().toLowerCase();
     if (name.trim() === '') { setError('Enter your name.'); return; }
     if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) { setError('Enter a valid email address.'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    if (!isFirebaseConfigured) {
+
+    const isHealthy = await checkBackendHealth();
+    if (!isHealthy) {
       setError('Backend is not configured. Start the Express server, then try again.');
       return;
     }
+
     setPending(true);
     try {
-      const res = await fetch(`${base}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), email: cleanEmail, password, role }),
-      });
+      let res: Response;
+      try {
+        res = await fetch(`${API_BASE_URL}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name.trim(), email: cleanEmail, password, role }),
+        });
+      } catch {
+        setError('Could not reach the server. Is the backend running on port 4000?');
+        return;
+      }
+
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
         setError(body?.error?.message ?? 'Registration failed. Try again.');
         return;
       }
-      const cred = await signInWithEmailAndPassword(auth, cleanEmail, password);
-      // Registration sets the custom claim server-side. Refresh the ID token
-      // before routing so SessionGate and API requests see the new role.
-      await cred.user.getIdToken(true);
-      dispatch(setSession({ uid: cred.user.uid, email: cleanEmail, name: name.trim(), role }));
+
+      const data = (await res.json().catch(() => null)) as { uid?: string; role?: string } | null;
+      dispatch(setSession({ uid: data?.uid ?? ('user-' + Date.now()), email: cleanEmail, name: name.trim(), role }));
       nav(HOME[role], { replace: true });
-    } catch {
-      setError('Could not reach the server. Is the backend running on port 4000?');
     } finally {
       setPending(false);
     }

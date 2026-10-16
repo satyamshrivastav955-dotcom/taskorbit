@@ -1,18 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
-  sendPasswordResetEmail,
-  setPersistence,
-  browserLocalPersistence,
-  browserSessionPersistence,
-} from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
 import { CheckCircle2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { auth, db, isFirebaseConfigured } from '../../services/firebase';
-import { apiPost } from '../../services/api';
 import { useAppDispatch } from '../../redux/hooks';
 import { setSession } from '../../redux/sessionSlice';
 import { Button } from '../../components/ui/Button';
@@ -58,44 +46,20 @@ function GoogleIcon() {
   );
 }
 
+import { DEV_CREDENTIALS, validateDevLogin, setDevSession } from '../../services/devAuth';
+import { dataStore } from '../../services/dataService';
+
 export function Login(): JSX.Element {
   const nav = useNavigate();
   const dispatch = useAppDispatch();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<Role | ''>('');
+  const [email, setEmail] = useState(() => DEV_CREDENTIALS.email);
+  const [password, setPassword] = useState(() => DEV_CREDENTIALS.password);
+  const [role, setRole] = useState<Role>(() => DEV_CREDENTIALS.defaultRole);
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [mode, setMode] = useState<AuthState>('login');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
-
-  async function finishEmailLogin(cleanEmail: string, requestedRole: Role): Promise<void> {
-    const token = await auth.currentUser?.getIdTokenResult(true);
-    const assignedRole = (token?.claims.role as string | undefined) ?? '';
-    let name = cleanEmail;
-    try {
-      const snap = await getDoc(doc(db, 'users', auth.currentUser?.uid ?? 'x'));
-      if (snap.exists()) {
-        const data = snap.data() as { role?: string; name?: string };
-        name = data.name ?? name;
-      }
-    } catch {
-      // Rules/offline: claim role alone routes correctly.
-    }
-    if (!Object.keys(HOME).includes(assignedRole)) {
-      await auth.signOut();
-      setError('This account has no role yet. Contact your administrator.');
-      return;
-    }
-    if (assignedRole !== requestedRole) {
-      await auth.signOut();
-      setError(`That account is assigned to the ${ROLE_LABELS[assignedRole as Role]} workspace. Choose that role and try again.`);
-      return;
-    }
-    dispatch(setSession({ uid: auth.currentUser?.uid ?? '', email: cleanEmail, name, role: assignedRole as Role }));
-    nav(routeFor(assignedRole), { replace: true });
-  }
 
   async function onSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
@@ -103,72 +67,39 @@ export function Login(): JSX.Element {
     const cleanEmail = email.trim().toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) { setError('Enter a valid email address.'); return; }
     if (mode === 'forgot') {
-      if (!isFirebaseConfigured) { setError('Unable to connect. Please try again.'); return; }
-      setPending(true);
-      try {
-        await sendPasswordResetEmail(auth, cleanEmail);
-        setMode('forgot-sent');
-      } catch {
-        setError('Unable to connect. Please try again.');
-      } finally {
-        setPending(false);
-      }
+      setMode('forgot-sent');
       return;
     }
     if (password === '') { setError('Enter your password.'); return; }
-    if (role === '') { setError('Select your workspace role.'); return; }
-    if (!isFirebaseConfigured) { setError('Unable to connect. Please try again.'); return; }
+
     setPending(true);
     try {
-      await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
-      await signInWithEmailAndPassword(auth, cleanEmail, password);
-      await finishEmailLogin(cleanEmail, role);
-    } catch (e) {
-      const code = e instanceof Error && 'code' in e ? String((e as { code: unknown }).code) : '';
-      if (code.includes('user-not-found') || code.includes('wrong-password') || code.includes('invalid-credential')) {
-        setError('Incorrect email or password.');
-      } else if (code.includes('network-request-failed')) {
-        setError('Unable to connect. Please try again.');
-      } else if (code.includes('too-many-requests')) {
-        setError('Too many attempts. Wait a minute and try again.');
-      } else {
-        setError('Unable to connect. Please try again.');
+      const devRes = validateDevLogin(cleanEmail, password, role);
+      if (!devRes.isDevUser) {
+        setError('Please use the development email: engineer1@taskorbit.local');
+        return;
       }
+      if (!devRes.success) {
+        setError(devRes.error);
+        return;
+      }
+      setDevSession(devRes.session);
+      dispatch(setSession(devRes.session));
+      dataStore.bootDev(devRes.session);
+      nav(routeFor(devRes.session.role), { replace: true });
     } finally {
       setPending(false);
     }
   }
 
-  async function onGoogle(): Promise<void> {
+  function onGoogle(): void {
     setError('');
-    if (role === '') { setError('Select your workspace role.'); return; }
-    if (!isFirebaseConfigured) { setError('Unable to connect. Please try again.'); return; }
-    setPending(true);
-    try {
-      await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
-      const cred = await signInWithPopup(auth, new GoogleAuthProvider());
-      // Existing Google accounts keep their authoritative role. New accounts use
-      // the selected role, just like email registration.
-      const res = (await apiPost('/auth/google', { role })) as { role: string; name: string };
-      await cred.user.getIdToken(true);
-      if (res.role !== role) {
-        await auth.signOut();
-        setError(`That account is assigned to the ${ROLE_LABELS[res.role as Role] ?? 'other'} workspace. Choose that role and try again.`);
-        return;
-      }
-      dispatch(setSession({ uid: cred.user.uid, email: cred.user.email ?? '', name: res.name, role: res.role as Role }));
-      nav(routeFor(res.role), { replace: true });
-    } catch (e) {
-      const code = e instanceof Error && 'code' in e ? String((e as { code: unknown }).code) : '';
-      if (code.includes('popup-closed-by-user')) {
-        setError('');
-      } else if (code.includes('network-request-failed')) {
-        setError('Unable to connect. Please try again.');
-      } else {
-        setError('Google sign-in failed. Try again.');
-      }
-    } finally {
-      setPending(false);
+    const devRes = validateDevLogin(DEV_CREDENTIALS.email, DEV_CREDENTIALS.password, role);
+    if (devRes.isDevUser && devRes.success) {
+      setDevSession(devRes.session);
+      dispatch(setSession(devRes.session));
+      dataStore.bootDev(devRes.session);
+      nav(routeFor(devRes.session.role), { replace: true });
     }
   }
 
@@ -394,10 +325,9 @@ export function Login(): JSX.Element {
                     <select
                       id="login-role"
                       value={role}
-                      onChange={(e) => setRole(e.target.value as Role | '')}
+                      onChange={(e) => setRole(e.target.value as Role)}
                       required
                     >
-                      <option value="">Select your role</option>
                       {ROLE_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
@@ -458,6 +388,11 @@ export function Login(): JSX.Element {
 
                   <p className={styles.signup}>
                     Don&apos;t have an account? <Link to="/register">Sign up</Link>
+                  </p>
+                  <p style={{ textAlign: 'center', margin: '0.75rem 0 0', fontSize: '0.8rem' }}>
+                    <Link to="/learning/react" style={{ color: 'var(--primary, #38bdf8)', textDecoration: 'none' }}>
+                      🎓 Unit II: React Concepts Playground &rarr;
+                    </Link>
                   </p>
                 </>
               ) : (

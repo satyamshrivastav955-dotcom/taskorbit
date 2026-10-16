@@ -19,9 +19,8 @@ import {
   RotateCcw,
   X,
 } from 'lucide-react';
-import { signOut } from 'firebase/auth';
 import { Avatar } from '../ui/Avatar';
-import { auth } from '../../services/firebase';
+import { clearDevSession } from '../../services/devAuth';
 import { dataStore } from '../../services/demoData';
 import { useAppDispatch, useAppSelector } from '../../redux/hooks';
 import { clearSession } from '../../redux/sessionSlice';
@@ -69,7 +68,7 @@ export function Sidebar({ role, conflictCount, open = false, onClose }: SidebarP
   };
 
   async function handleLogout(): Promise<void> {
-    await signOut(auth);
+    clearDevSession();
     dispatch(clearSession());
     navigate('/login');
   }

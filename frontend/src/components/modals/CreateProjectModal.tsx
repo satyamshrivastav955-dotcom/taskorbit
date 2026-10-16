@@ -38,13 +38,13 @@ export function CreateProjectModal({ onClose }: CreateProjectModalProps): JSX.El
     if (new Date(deadline) < new Date(startDate)) { setError('End date must be on or after start date.'); return; }
     setPending(true);
     try {
-      const project = await dataStore.createProject({
+      const project = savedProject ?? (await dataStore.createProject({
         title: title.trim(),
         description: description.trim() === '' ? `${category} project.` : description.trim(),
         priority,
         startDate,
         deadline,
-      });
+      }));
       setSavedProject(project);
       const uploaded = await uploadFiles(
         files,

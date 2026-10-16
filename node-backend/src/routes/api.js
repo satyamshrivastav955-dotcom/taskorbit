@@ -6,6 +6,7 @@ const {removeNotification}=require('../controllers/activity');
 const {log}=require('../controllers/activity');
 const auth=require('../controllers/auth');
 const collaboration=require('../controllers/collaboration');
+const uploadController=require('../controllers/upload');
 const router=express.Router();
 const wrap=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
 router.post('/auth/register',wrap(auth.register));
@@ -14,6 +15,8 @@ router.use(verifyToken);
 // endpoint establish the selected workspace role before the role gate.
 router.post('/auth/google',wrap(auth.ensureGoogleUser));
 router.use(requireRole('client','manager','assignee','reviewer'));
+router.post('/uploads',uploadController.uploadMiddleware,wrap(uploadController.handleUpload));
+router.post('/upload',uploadController.singleUploadMiddleware,wrap(uploadController.handleUpload));
 router.get('/workspace',wrap(workspace));
 router.post('/users',requireRole('manager'),wrap(auth.register));
 router.post('/activity',wrap(log));

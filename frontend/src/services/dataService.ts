@@ -1,13 +1,6 @@
-import {
-  getDoc,
-  updateDoc,
-  doc,
-  setDoc,
-} from 'firebase/firestore';
-import { onIdTokenChanged } from 'firebase/auth';
-import { auth, db } from './firebase';
 import { apiGet, apiPost, apiPut, apiDelete } from './api';
 import { uploadFiles } from './uploads';
+import { isDevMode, getDevSession, type DevSession } from './devAuth';
 import type {
   Project,
   Task,
@@ -117,24 +110,25 @@ class DataStore {
     this.applyDensity();
     window.addEventListener('taskorbit:mutated', () => { void this.refresh(); });
     window.addEventListener('focus', () => { void this.refresh(); });
-    onIdTokenChanged(auth, (user) => {
-      if (user === null) {
-        this.bootKey = '';
-        this.reset();
-        return;
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'taskorbit_dev_session') {
+        const devSession = getDevSession();
+        if (devSession) {
+          this.bootDev(devSession);
+        } else {
+          this.bootKey = '';
+          this.reset();
+        }
       }
-      void user.getIdTokenResult().then(token => {
-        const role = token.claims.role as Role | undefined;
-        if (!role || auth.currentUser?.uid !== user.uid) return;
-        const key = `${user.uid}:${role}`;
-        if (this.bootKey !== key) { this.bootKey = key; void this.boot(user.uid, user.email ?? ''); }
-      }).catch(() => {
-        if (auth.currentUser?.uid !== user.uid) return;
-        this.error = 'Your session could not be refreshed. Check your connection and sign in again.';
-        this.loading = false;
-        this.notify();
-      });
     });
+
+    const devSession = getDevSession();
+    if (devSession) {
+      this.bootDev(devSession);
+    } else {
+      this.loading = false;
+      this.notify();
+    }
   }
 
   private reset(): void {
@@ -175,23 +169,46 @@ class DataStore {
     };
   }
 
-  private async boot(uid: string, email: string): Promise<void> {
+  public bootDev(session: DevSession): void {
     this.reset();
-    this.bootedUid = uid;
-    this.me = { uid, email, name: email, role: 'client' };
-    try {
-      const token = await auth.currentUser?.getIdTokenResult();
-      const claimRole = (token?.claims.role as Role | undefined) ?? 'client';
-      this.me.role = claimRole;
-      const snap = await getDoc(doc(db, 'users', uid));
-      if (snap.exists()) {
-        const data = snap.data() as { name?: string; role?: Role };
-        this.me.name = data.name ?? email;
-      }
-    } catch {
-      // Profile lookup best-effort; claim role already set.
+    this.bootedUid = session.uid;
+    this.bootKey = `dev:${session.uid}:${session.role}`;
+    this.me = {
+      uid: session.uid,
+      email: session.email,
+      name: session.name,
+      role: session.role,
+    };
+    const devProfile: UserProfile = {
+      uid: session.uid,
+      name: session.name,
+      email: session.email,
+      role: session.role,
+      jobTitle: session.jobTitle ?? 'Lead QA Engineer',
+      department: session.department ?? 'Engineering',
+      bio: session.bio ?? 'Development testing account for TaskOrbit.',
+      createdAt: new Date().toISOString(),
+    };
+    this.users = [devProfile];
+    this.loading = false;
+    this.error = '';
+    this.notify();
+    void this.startWorkspaceLoader(session.uid);
+  }
+
+  private async boot(uid: string, email: string): Promise<void> {
+    const dev = getDevSession();
+    if (dev) {
+      this.bootDev(dev);
+    } else {
+      this.reset();
+      this.bootedUid = uid;
+      this.me = { uid, email, name: email, role: 'client' };
+      await this.startWorkspaceLoader(uid);
     }
-    if (this.bootedUid !== uid) return;
+  }
+
+  private async startWorkspaceLoader(uid: string): Promise<void> {
     let running = false;
     let refreshAgain = false;
     const refresh = async (): Promise<void> => {
@@ -199,6 +216,12 @@ class DataStore {
       if (this.bootedUid !== uid) return;
       running = true;
       try {
+        if (!getDevSession()) {
+          this.error = '';
+          this.loading = false;
+          this.notify();
+          return;
+        }
         const payload = (await apiGet('/workspace')) as {
           projects?: unknown[]; tasks?: unknown[]; users?: unknown[]; requirements?: unknown[];
           documents?: unknown[]; feedbacks?: unknown[]; submissions?: unknown[]; reviews?: unknown[];
@@ -271,16 +294,7 @@ class DataStore {
     if (this.bootedUid !== uid) return;
     this.refreshTimer = setInterval(() => { void refresh(); }, 5000);
 
-    try {
-      const sdoc = await getDoc(doc(db, 'userSettings', uid));
-      if (sdoc.exists() && this.bootedUid === uid) {
-        this.settings = { ...DEFAULT_SETTINGS, ...(sdoc.data() as Partial<UserSettings>) };
-        localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(this.settings));
-        this.applyDensity();
-      }
-    } catch {
-      // Settings load best-effort; defaults already applied.
-    }
+    this.applyDensity();
     this.notify();
   }
 
@@ -854,21 +868,18 @@ class DataStore {
   public async updateProfile(uid: string, patch: { name?: string; phone?: string; department?: string; bio?: string; jobTitle?: string }): Promise<void> {
     if (uid === '') throw new Error('Sign in first.');
     if (patch.name !== undefined && patch.name.trim() === '') throw new Error('Name cannot be empty.');
-    await updateDoc(doc(db, 'users', uid), { ...patch, updatedAt: new Date().toISOString() } as Record<string, unknown>);
     this.me = { ...this.me, name: patch.name ?? this.me.name };
     this.users = this.users.map((user) => user.uid === uid ? { ...user, ...patch } : user);
     this.notify();
   }
 
   public async markNotificationRead(id: string): Promise<void> {
-    await updateDoc(doc(db, 'notifications', id), { read: true });
     this.notifications = this.notifications.map((item) => item.id === id ? { ...item, read: true } : item);
     this.notify();
   }
 
   public async markAllNotificationsRead(): Promise<void> {
     const ids = this.notifications.filter((item) => !item.read).map((item) => item.id);
-    await Promise.all(ids.map((id) => updateDoc(doc(db, 'notifications', id), { read: true })));
     this.notifications = this.notifications.map((item) => ids.includes(item.id) ? { ...item, read: true } : item);
     this.notify();
   }
@@ -883,9 +894,7 @@ class DataStore {
     this.settings = { ...this.settings, ...patch };
     localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(this.settings));
     this.applyDensity();
-    if (this.me.uid !== '') {
-      await setDoc(doc(db, 'userSettings', this.me.uid), { ...this.settings, updatedAt: new Date().toISOString() }, { merge: true });
-    }
+    this.notify();
   }
 
   public async toggleSubtask(taskId: string, subtaskId: string): Promise<void> {

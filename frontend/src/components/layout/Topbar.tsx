@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, Plus, ChevronDown, User, Settings, LogOut, Menu } from 'lucide-react';
-import { signOut } from 'firebase/auth';
+import { Search, Bell, Plus, ChevronDown, User, Settings, LogOut, Menu, Code } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
-import { auth } from '../../services/firebase';
+import { clearDevSession } from '../../services/devAuth';
 import { dataStore } from '../../services/demoData';
 import { useAppDispatch, useAppSelector } from '../../redux/hooks';
 import { clearSession } from '../../redux/sessionSlice';
@@ -65,7 +64,7 @@ export function Topbar({ role, onOpenNavigation, onOpenCreateModal, createButton
 
   async function handleLogout(): Promise<void> {
     setShowProfileMenu(false);
-    await signOut(auth);
+    clearDevSession();
     dispatch(clearSession());
     navigate('/login');
   }
@@ -185,6 +184,15 @@ export function Topbar({ role, onOpenNavigation, onOpenCreateModal, createButton
               >
                 <Settings size={15} />
                 <span>Settings</span>
+              </button>
+              <button
+                type="button"
+                className={styles.dropdownItem}
+                role="menuitem"
+                onClick={() => { setShowProfileMenu(false); navigate('/learning/react'); }}
+              >
+                <Code size={15} />
+                <span>React Playground (Unit II)</span>
               </button>
               <div className={styles.dropdownDivider} />
               <button type="button" className={`${styles.dropdownItem} ${styles.logoutItem}`} role="menuitem" onClick={() => { void handleLogout(); }}>

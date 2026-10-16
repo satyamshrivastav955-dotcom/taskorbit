@@ -1,19 +1,14 @@
 import { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { onIdTokenChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
 import { Provider } from 'react-redux';
-import { auth, db } from './services/firebase';
 import { store } from './redux/store';
 import { useAppDispatch } from './redux/hooks';
 import { setSession, clearSession } from './redux/sessionSlice';
 import { AppRoutes } from './pages/AppRoutes';
-import type { Role } from './types';
-import { apiPost } from './services/api';
 import { ToastProvider } from './components/ui/Toast';
+import { getDevSession } from './services/devAuth';
+import { dataStore } from './services/dataService';
 import './styles/global.css';
-
-const VALID_ROLES: Role[] = ['client', 'manager', 'assignee', 'reviewer'];
 
 class AppErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -43,46 +38,13 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { hasError: bo
 function SessionGate({ children }: { children: ReactNode }): JSX.Element {
   const dispatch = useAppDispatch();
   useEffect(() => {
-    let revision = 0;
-    const unsub = onIdTokenChanged(auth, (user) => {
-      const currentRevision = ++revision;
-      if (user === null) {
-        dispatch(clearSession());
-        return;
-      }
-      void (async () => {
-        try {
-          const token = await user.getIdTokenResult();
-          let role = (token.claims.role as string | undefined) ?? '';
-          let name = user.email ?? '';
-          try {
-            const snap = await getDoc(doc(db, 'users', user.uid));
-            if (snap.exists()) {
-              const data = snap.data() as { role?: string; name?: string };
-              name = data.name ?? name;
-            }
-          } catch {
-            // Firestore read failed (rules/offline). Fall through with claim role.
-          }
-           if (!VALID_ROLES.includes(role as Role) && role === '' && user.providerData.some(provider => provider.providerId === 'google.com')) {
-             const provisioned = await apiPost('/auth/google', {}) as { role?: string; name?: string };
-             await user.getIdToken(true);
-             role = ((await user.getIdTokenResult()).claims.role as string | undefined) ?? '';
-             name = provisioned.name ?? name;
-           }
-           if (currentRevision !== revision || auth.currentUser?.uid !== user.uid) return;
-           if (!VALID_ROLES.includes(role as Role)) {
-            dispatch(clearSession());
-            await auth.signOut();
-            return;
-          }
-          dispatch(setSession({ uid: user.uid, email: user.email ?? '', name, role: role as Role }));
-        } catch {
-          if (currentRevision === revision) dispatch(clearSession());
-        }
-      })();
-    });
-    return () => { revision++; unsub(); };
+    const devSession = getDevSession();
+    if (devSession) {
+      dispatch(setSession(devSession));
+      dataStore.bootDev(devSession);
+    } else {
+      dispatch(clearSession());
+    }
   }, [dispatch]);
   return <>{children}</>;
 }
