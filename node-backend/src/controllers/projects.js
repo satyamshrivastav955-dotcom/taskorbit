@@ -16,7 +16,7 @@ function projectInput(body) {
 async function create(req,res) {
  const fs=db(), ref=fs.collection('projects').doc(), input=projectInput(req.body);
  const managers=rows(await fs.collection('users').where('role','==','manager').get());
- const data={...input,clientId:req.user.uid,managerId:managers[0]?.id||null,status:'submitted',memberIds:[],totalTasks:0,tasksCompleted:0,progress:0,createdAt:new Date(),updatedAt:new Date()};
+  const data={...input,clientId:req.user.uid,managerId:null,status:'draft',memberIds:[],totalTasks:0,tasksCompleted:0,progress:0,createdAt:new Date(),updatedAt:new Date()};
  const batch=fs.batch(); batch.set(ref,data);
  activity(batch,req.user,ref.id,'project created','project',ref.id,managers.map(m=>m.id));
  for(const m of managers) notify(batch,m.id,'New project: '+data.title,'system','/manager/projects/'+ref.id);

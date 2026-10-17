@@ -146,7 +146,7 @@ async function mutate(req, operation) {
     const remaining = projectTasks.filter(t => t.id !== ref.id);
     if (operation !== 'delete') remaining.push(next);
     const completed = remaining.filter(t => t.status === 'approved').length;
-    const status = remaining.length && completed === remaining.length ? 'completed' : remaining.length ? 'active' : 'submitted';
+    const status = remaining.length && completed === remaining.length ? 'completed' : remaining.length ? 'active' : 'draft';
     tx.update(projectRef, { status, managerId: project.managerId || (req.user.role === 'manager' ? req.user.uid : null), memberIds: [...new Set(remaining.flatMap(t => [t.assigneeId, t.reviewerId]))], totalTasks: remaining.length, tasksCompleted: completed, progress: remaining.length ? Math.round(100 * completed / remaining.length) : 0, updatedAt: new Date() });
     if (status === 'completed' && project.status !== status) {
       notify(tx, project.clientId, 'Project completed: ' + project.title, 'approval', '/client/projects/' + projectId);
