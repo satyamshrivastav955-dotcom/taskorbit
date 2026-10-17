@@ -1,8 +1,15 @@
-body { font-family: Inter, sans-serif; background: #F6F8FB; color: #1F2A37; max-width: 900px; margin: 0 auto; padding: 24px; }
-h1 { color: #2D3F54; font-size: 22px; }
-table { width: 100%; border-collapse: collapse; background: #fff; }
-td, th { border: 1px solid #E2E8F0; padding: 8px 12px; font-size: 13px; text-align: left; }
-th { font-size: 11px; text-transform: uppercase; color: #52647A; }
-input, textarea, select { border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 12px; font-size: 14px; width: 100%; margin-bottom: 12px; }
-button { background: #006ECF; color: #fff; border: 0; border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer; }
-form { background: #fff; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+/* Standalone reporting service: mirrors the core TaskOrbit blue tokens. */
+:root { --navy: #163B65; --primary: #245B91; --action: #367FC4; --pale: #EAF2FA; --background: #F5F8FC; --surface: #FFFFFF; --text: #243449; --muted: #52667E; --border: #DFE7F0; }
+* { box-sizing: border-box; }
+body { font-family: Inter, system-ui, sans-serif; background: var(--background); color: var(--text); max-width: 900px; margin: 0 auto; padding: 24px; line-height: 1.5; }
+h1 { color: var(--navy); font-size: 24px; letter-spacing: -.035em; }
+a { color: var(--primary); }
+table { width: 100%; border-collapse: collapse; background: var(--surface); }
+td, th { border: 1px solid var(--border); padding: 10px 12px; font-size: 13px; text-align: left; overflow-wrap: anywhere; }
+th { font-size: 11px; text-transform: uppercase; color: var(--muted); background: var(--pale); }
+input, textarea, select { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font: inherit; color: var(--text); background: var(--surface); width: 100%; margin-bottom: 12px; }
+button { background: var(--primary); color: var(--surface); border: 0; border-radius: 8px; padding: 9px 16px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+button:hover { background: var(--navy); }
+:focus-visible { outline: 2px solid var(--action); outline-offset: 3px; }
+form { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+@media (max-width: 600px) { body { padding: 16px; } td, th { padding: 8px; } }

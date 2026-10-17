@@ -8,7 +8,7 @@ class SessionAuth
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!session()->has('manager')) {
+        if (!session()->has('user')) {
             return redirect('/login');
         }
         return $next($request);
