@@ -133,7 +133,7 @@ export function Topbar({ role, onOpenNavigation, onOpenCreateModal, createButton
 
       <div className={styles.actions}>
         {actionLabel !== null && actionLabel.trim() !== '' && (
-          <button type="button" className={styles.createBtn} onClick={onOpenCreateModal}>
+          <button type="button" className={styles.createBtn} onClick={onOpenCreateModal} aria-label={actionLabel}>
             <Plus size={16} />
             <span>{actionLabel}</span>
           </button>

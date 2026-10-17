@@ -5,7 +5,7 @@ html, body, #root { min-height: 100%; width: 100%; margin: 0; padding: 0; }
 html { background: var(--background); }
 body {
   min-width: 320px;
-  font-family: 'Inter', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 14px;
   line-height: 1.5;
   color: var(--text-primary);
@@ -27,8 +27,8 @@ p { margin: 0 0 0.5rem; }
 a { color: var(--primary); text-decoration: none; transition: color var(--transition-fast); }
 a:hover { color: var(--primary-hover); }
 
-:focus-visible { outline: 2px solid var(--soft-gold); outline-offset: 3px; }
-::selection { background: var(--gold-wash); color: var(--text-primary); }
+:focus-visible { outline: 2px solid var(--action-blue) !important; outline-offset: 3px; }
+::selection { background: var(--primary-100); color: var(--deep-navy); }
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border: 2px solid transparent; border-radius: var(--radius-full); background-clip: padding-box; }
@@ -42,9 +42,14 @@ a:hover { color: var(--primary-hover); }
 
 /* Shared interaction vocabulary used by the role pages. */
 .card, section, [class*='card'] { transition: border-color var(--transition-base), box-shadow var(--transition-base), background-color var(--transition-base); }
-.responsive-grid { display: grid; }
+.responsive-grid { display: grid; min-width: 0; }
+.responsive-grid > * { min-width: 0; }
 button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 button:not(:disabled):active { transform: translateY(1px); }
+
+::placeholder { color: var(--text-tertiary); opacity: 1; }
+select { appearance: auto; }
+input[type='checkbox'], input[type='radio'] { accent-color: var(--primary); }
 
 [data-density='compact'] td { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
 [data-density='compact'] .card, [data-density='compact'] section { padding: 0.75rem !important; }

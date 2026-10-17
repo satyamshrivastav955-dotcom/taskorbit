@@ -82,7 +82,7 @@ export function Sidebar({ role, conflictCount, open = false, onClose }: SidebarP
         <div className={styles.logoIcon}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <circle cx="12" cy="12" r="9" stroke="#FFFFFF" strokeWidth="2.2" />
-            <path d="M7 12A5 5 0 0 1 17 12" stroke="#35B9C2" strokeWidth="2.2" strokeLinecap="round" />
+            <path d="M7 12A5 5 0 0 1 17 12" stroke="var(--primary-300)" strokeWidth="2.2" strokeLinecap="round" />
             <circle cx="12" cy="12" r="2.5" fill="#FFFFFF" />
           </svg>
         </div>

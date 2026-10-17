@@ -17,8 +17,8 @@ function dateToPercent(dateStr: string, startMs: number, totalMs: number): numbe
 }
 
 const PHASE_COLORS = [
-  '#93C5FD', '#60A5FA', '#818CF8', '#FCD34D',
-  '#86EFAC', '#FCA5A5', '#C084FC', '#6EE7B7',
+  'var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)',
+  'var(--chart-4)', 'var(--chart-5)', 'var(--chart-6)',
 ];
 
 export function ClientProgress(): JSX.Element {
@@ -122,18 +122,19 @@ export function ClientProgress(): JSX.Element {
     <AppLayout role="client">
       <PageContainer>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '8px' }}>
           <div>
             <h1 style={{ fontSize: '26px', fontWeight: 700 }}>Project Progress</h1>
             <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>
               Visualize project timelines, milestones, and overall progress.
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', maxWidth: '100%' }}>
             <select
               value={effectiveId}
               onChange={(e) => setSelectedProjectId(e.target.value)}
-              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: '#FFFFFF', fontSize: '13px', outline: 'none', fontWeight: 600 }}
+              aria-label="Project timeline"
+              style={{ maxWidth: '100%', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '13px', fontWeight: 600 }}
             >
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -147,7 +148,8 @@ export function ClientProgress(): JSX.Element {
         {/* Main Grid */}
         <div className="responsive-grid" style={{ gridTemplateColumns: '2.4fr 1fr', gap: '20px' }}>
           {/* Gantt-style task timeline */}
-          <div style={{ background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: '14px', padding: '22px', position: 'relative', overflowX: 'auto' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '22px', minWidth: 0, overflowX: 'auto' }}>
+            <div style={{ minWidth: '640px', position: 'relative', paddingTop: '18px' }}>
             {/* Header Dates */}
             <div style={{ display: 'grid', gridTemplateColumns: `180px repeat(${Math.max(2, monthMarkers.length)}, 1fr)`, borderBottom: '1px solid var(--border)', paddingBottom: '10px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
               <div>Task</div>
@@ -155,7 +157,7 @@ export function ClientProgress(): JSX.Element {
                 <div key={m} style={{ textAlign: 'center', position: 'relative' }}>
                   {m}
                   {new Date(today).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) === m && (
-                    <span style={{ position: 'absolute', top: '-18px', left: '50%', transform: 'translateX(-50%)', background: '#EF4444', color: '#FFF', fontSize: '9px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px' }}>
+                    <span style={{ position: 'absolute', top: '-18px', left: '50%', transform: 'translateX(-50%)', background: 'var(--primary)', color: 'var(--on-primary)', fontSize: '9px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px' }}>
                       Today
                     </span>
                   )}
@@ -170,9 +172,9 @@ export function ClientProgress(): JSX.Element {
                   position: 'absolute',
                   top: '55px',
                   bottom: '25px',
-                  left: `calc(180px + (100% - 180px - 44px) * ${todayPct / 100})`,
+                  left: `calc(180px + (100% - 180px) * ${todayPct / 100})`,
                   width: '1px',
-                  borderLeft: '1.5px dashed #EF4444',
+                  borderLeft: '1.5px dashed var(--action-blue)',
                   pointerEvents: 'none',
                 }}
               />
@@ -197,13 +199,13 @@ export function ClientProgress(): JSX.Element {
                   return (
                     <div key={task.id} style={{ display: 'grid', gridTemplateColumns: '180px 1fr', alignItems: 'center' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', overflow: 'hidden' }}>
-                        <CheckCircle2 size={16} color={isCompleted ? '#10B981' : '#CBD5E1'} style={{ flexShrink: 0 }} />
+                        <CheckCircle2 size={16} color={isCompleted ? 'var(--success)' : 'var(--text-muted)'} style={{ flexShrink: 0 }} />
                         <span style={{ fontWeight: 500, color: isCompleted ? 'var(--text-primary)' : 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {task.title}
                         </span>
                       </div>
 
-                      <div style={{ position: 'relative', height: '24px', background: '#F8FAFC', borderRadius: '6px' }}>
+                      <div style={{ position: 'relative', height: '24px', background: 'var(--surface-muted)', borderRadius: '6px' }}>
                         <div
                           title={`${task.title}: ${task.startDate} → ${task.deadline}`}
                           style={{
@@ -216,11 +218,11 @@ export function ClientProgress(): JSX.Element {
                             borderRadius: '4px',
                             fontSize: '10.5px',
                             fontWeight: 600,
-                            color: '#1E293B',
+                            color: 'var(--on-primary)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+                            boxShadow: 'var(--shadow-sm)',
                             overflow: 'hidden',
                             whiteSpace: 'nowrap',
                           }}
@@ -233,8 +235,8 @@ export function ClientProgress(): JSX.Element {
                 })
               )}
             </div>
+            </div>
           </div>
-
           {/* Right Progress Card */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: '14px', padding: '22px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -244,28 +246,28 @@ export function ClientProgress(): JSX.Element {
                   size={130}
                   strokeWidth={12}
                   sublabel={overallProgress >= 75 ? 'On Track' : overallProgress >= 40 ? 'In Progress' : 'Starting'}
-                  color={overallProgress >= 75 ? '#10B981' : '#3B82F6'}
+                  color={overallProgress >= 75 ? 'var(--success)' : 'var(--action-blue)'}
                 />
               </div>
 
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', marginTop: '10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981' }} />
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success)' }} />
                     Completed
                   </span>
                   <strong>{pctApproved}%</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#38BDF8' }} />
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--action-blue)' }} />
                     In Progress
                   </span>
                   <strong>{pctInProgress}%</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#FBBF24' }} />
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--warning)' }} />
                     Pending
                   </span>
                   <strong>{pctPending}%</strong>
@@ -273,7 +275,7 @@ export function ClientProgress(): JSX.Element {
                 {pctOverdue > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#EF4444' }} />
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--danger)' }} />
                       Other
                     </span>
                     <strong>{pctOverdue}%</strong>

@@ -27,13 +27,13 @@
   border-radius: var(--radius-md);
   font-size: 13.5px;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+  box-shadow: var(--shadow-sm);
   transition: all 0.15s ease;
 }
 
 .newProjectBtn:hover {
   background: var(--primary-hover);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+  box-shadow: var(--shadow-sm);
 }
 
 .topControlRow {
@@ -46,6 +46,7 @@
 
 .filterPills {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
@@ -80,12 +81,13 @@
 }
 
 .activePill .pillCount {
-  background: rgba(255, 255, 255, 0.25);
-  color: #FFFFFF;
+  background: var(--pale-blue);
+  color: var(--deep-navy);
 }
 
 .searchAndSort {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
 }
@@ -129,17 +131,18 @@
 /* Two-Column Layout */
 .projectsLayout {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   gap: 20px;
 }
 
 @media (max-width: 1200px) {
   .projectsLayout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 .listCard {
+  min-width: 0;
   background: #FFFFFF;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -157,6 +160,7 @@
 
 .projectCardItem {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 14px;
   padding: 12px 14px;
@@ -174,14 +178,14 @@
 
 .selectedProjectItem {
   border-color: var(--primary) !important;
-  background: #F5F7FF !important;
+  background: var(--pale-blue) !important;
 }
 
 .projectCardIcon {
   width: 38px;
   height: 38px;
   border-radius: 8px;
-  background: #EEF2FF;
+  background: var(--pale-blue);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -189,6 +193,7 @@
 }
 
 .projectCardInfo {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   flex: 1.2;
@@ -319,6 +324,7 @@
 
 /* Details Panel (Right) */
 .detailCard {
+  min-width: 0;
   background: #FFFFFF;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -331,6 +337,8 @@
 
 .detailHeader {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   align-items: flex-start;
   justify-content: space-between;
 }
@@ -339,7 +347,7 @@
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: #EEF2FF;
+  background: var(--pale-blue);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -370,6 +378,7 @@
 
 .detailTabs {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   border-bottom: 1px solid var(--border);
   gap: 18px;
@@ -407,7 +416,7 @@
 
 .metaGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 

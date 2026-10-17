@@ -1,7 +1,7 @@
 .wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-sm); }
 .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-light); background: var(--surface); }
 .searchInput { min-width: 11rem; height: 2.1rem; padding: 0 0.7rem; color: var(--text-primary); border: 1px solid var(--border); border-radius: 0.55rem; outline: 0; background: var(--surface-pill); font-size: 0.78rem; }
-.searchInput:focus { border-color: var(--primary); box-shadow: 0 0 0 0.2rem rgba(76, 91, 212, 0.12); }
+.searchInput:focus { border-color: var(--action-blue); box-shadow: var(--focus-ring); }
 .count { margin-left: auto; color: var(--text-secondary); font-size: 0.72rem; }
 .table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
 .table th { height: 2.65rem; padding: 0 1rem; color: var(--text-tertiary); border-bottom: 1px solid var(--border); background: var(--surface-muted); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.07em; text-align: left; text-transform: uppercase; white-space: nowrap; }

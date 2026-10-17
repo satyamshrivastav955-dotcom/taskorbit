@@ -1,4 +1,8 @@
 .badge { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid transparent; border-radius: var(--radius-sm); white-space: nowrap; font-weight: 700; letter-spacing: 0.01em; }
 .sm { padding: 0.2rem 0.55rem; font-size: 0.66rem; } .md { padding: 0.28rem 0.65rem; font-size: 0.72rem; } .lg { padding: 0.4rem 0.85rem; font-size: 0.78rem; }
 .dot { width: 0.38rem; height: 0.38rem; border-radius: 50%; background: currentColor; }
-.todo, .not_started { color: var(--ink-soft); border-color: var(--line); background: var(--surface-muted); } .in_progress { color: var(--forest); border-color: #B8CDB6; background: var(--sage-wash); } .submitted, .at_risk { color: #856921; border-color: #E2CA8D; background: var(--gold-wash); } .in_review { color: var(--forest); border-color: #B8CDB6; background: var(--sage-wash); } .revision, .delayed { color: var(--red-700); border-color: #E5B5A8; background: var(--terracotta-wash); } .approved, .completed, .on_track { color: var(--forest); border-color: #B8CDB6; background: var(--sage-wash); } .default { color: var(--ink-soft); border-color: var(--line); background: var(--surface-muted); }
+.todo, .not_started, .default { color: var(--text-secondary); border-color: var(--border); background: var(--surface-muted); }
+.active, .in_progress, .in_review, .under_review, .submitted { color: var(--professional-blue); border-color: var(--info-border); background: var(--pale-blue); }
+.at_risk { color: var(--warning-text); border-color: var(--warning-border); background: var(--warning-wash); }
+.revision, .delayed { color: var(--red-700); border-color: var(--danger-border); background: var(--danger-wash); }
+.approved, .completed, .on_track { color: var(--green-600); border-color: var(--success-border); background: var(--success-wash); }

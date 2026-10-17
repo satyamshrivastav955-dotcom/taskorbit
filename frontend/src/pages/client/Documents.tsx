@@ -15,10 +15,10 @@ function getFileType(fileName: string): 'Design' | 'Document' | 'Other' {
 function FileTypeIcon({ fileName }: { fileName: string }) {
   const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
   if (['png', 'jpg', 'jpeg', 'svg', 'webp', 'gif', 'fig', 'sketch'].includes(ext)) {
-    return <FileImage size={18} color="#6366F1" />;
+    return <FileImage size={18} color="var(--primary)" />;
   }
   if (['zip', 'tar', 'gz', 'rar', '7z'].includes(ext)) {
-    return <Archive size={18} color="#F59E0B" />;
+    return <Archive size={18} color="var(--primary)" />;
   }
   return <File size={18} color="var(--primary)" />;
 }
@@ -120,7 +120,7 @@ export function ClientDocuments(): JSX.Element {
         </div>
 
         {/* Filter Tabs & Search */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {(['all', 'designs', 'documents', 'other'] as const).map((t) => (
               <button
@@ -141,14 +141,14 @@ export function ClientDocuments(): JSX.Element {
             ))}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#FFF', border: '1px solid var(--border)', padding: '6px 12px', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--surface)', border: '1px solid var(--border)', padding: '6px 12px', borderRadius: '8px', maxWidth: '100%' }}>
             <Search size={14} color="var(--text-muted)" />
             <input
               type="text"
               placeholder="Search files..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '12.5px' }}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '12.5px', minWidth: 0, width: '100%' }}
             />
           </div>
         </div>
@@ -204,7 +204,7 @@ export function ClientDocuments(): JSX.Element {
                       {f.taskTitle}
                     </td>
                     <td style={{ padding: '14px 20px' }}>
-                      <span style={{ background: '#EEF2FF', color: 'var(--primary)', padding: '2px 8px', borderRadius: '4px', fontSize: '11.5px', fontWeight: 600 }}>
+                      <span style={{ background: 'var(--pale-blue)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '4px', fontSize: '11.5px', fontWeight: 600 }}>
                         {f.type}
                       </span>
                     </td>

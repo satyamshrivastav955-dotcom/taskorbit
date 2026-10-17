@@ -1,7 +1,16 @@
-body { font-family: Inter, sans-serif; background: #F6F8FB; color: #1F2A37; }
-table { width: 100%; border-collapse: collapse; background: #fff; }
-th { font-size: 11px; text-transform: uppercase; color: #52647A; text-align: left; }
-td, th { border: 1px solid #E2E8F0; padding: 8px 12px; font-size: 13px; }
-.bar { background: #E2E8F0; border-radius: 8px; height: 8px; }
-.fill { background: #006ECF; height: 8px; border-radius: 8px; }
-@media print { button { display: none; } body { background: #fff; } }
+/* Standalone reporting service: mirrors the core TaskOrbit blue tokens. */
+:root { --navy: #163B65; --primary: #245B91; --action: #367FC4; --pale: #EAF2FA; --background: #F5F8FC; --surface: #FFFFFF; --text: #243449; --muted: #52667E; --border: #DFE7F0; }
+* { box-sizing: border-box; }
+body { font-family: Inter, system-ui, sans-serif; background: var(--background); color: var(--text); line-height: 1.5; }
+h1, h2 { color: var(--navy); letter-spacing: -.035em; }
+a { color: var(--primary); }
+table { width: 100%; border-collapse: collapse; background: var(--surface); }
+td, th { border: 1px solid var(--border); padding: 10px 12px; font-size: 13px; overflow-wrap: anywhere; }
+th { font-size: 11px; text-transform: uppercase; color: var(--muted); text-align: left; background: var(--pale); }
+button { padding: 9px 16px; border: 0; border-radius: 8px; color: var(--surface); background: var(--primary); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+button:hover { background: var(--navy); }
+input, select { max-width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
+:focus-visible { outline: 2px solid var(--action); outline-offset: 3px; }
+.bar { background: var(--border); border-radius: 8px; height: 8px; }
+.fill { background: var(--action); height: 8px; border-radius: 8px; }
+@media print { button { display: none; } body { background: var(--surface); } }

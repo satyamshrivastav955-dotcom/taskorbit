@@ -4,7 +4,7 @@ import { AppLayout, PageContainer } from '../../components/layout/AppLayout';
 import { dataStore } from '../../services/demoData';
 import styles from './AssigneePages.module.css';
 
-const BAR_COLORS = ['#6366F1', '#8B5CF6', '#0EA5E9', '#10B981', '#F59E0B', '#F97316'];
+const BAR_COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--chart-6)'];
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -124,7 +124,7 @@ export function AssigneeTimeline(): JSX.Element {
               {todayPosition > 0 && todayPosition < 100 && (
                 <div
                   aria-hidden="true"
-                  style={{ position: 'absolute', top: '55px', bottom: '25px', left: `calc(200px + (100% - 244px) * ${todayPosition / 100})`, width: '1px', borderLeft: '1.5px dashed #EF4444', pointerEvents: 'none' }}
+                  style={{ position: 'absolute', top: '55px', bottom: '25px', left: `calc(200px + (100% - 244px) * ${todayPosition / 100})`, width: '1px', borderLeft: '1.5px dashed var(--action-blue)', pointerEvents: 'none' }}
                 />
               )}
 
@@ -133,7 +133,7 @@ export function AssigneeTimeline(): JSX.Element {
                   <div key={task.id} className={styles.timelineRow}>
                     <div className={styles.timelineTaskName} title={task.title}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px' }}>
-                        <CheckSquare size={15} color={task.status === 'approved' ? '#10B981' : 'var(--primary)'} aria-hidden="true" />
+                        <CheckSquare size={15} color={task.status === 'approved' ? 'var(--success)' : 'var(--primary)'} aria-hidden="true" />
                         {task.title}
                       </span>
                     </div>

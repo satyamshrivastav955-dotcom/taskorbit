@@ -22,20 +22,22 @@
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .cardInner {
   padding: 22px;
 }
 
+.tableCard { min-width: 0; overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-sm); }
+.tableCard table { min-width: 740px; }
+
 .interactiveRow {
   transition: background-color 0.15s ease, transform 0.15s ease;
 }
 
 .interactiveRow:hover {
-  background: #eef2ff !important;
-  transform: translateY(-1px);
+  background: var(--pale-blue) !important;
 }
 
 .interactiveRow:focus-visible,

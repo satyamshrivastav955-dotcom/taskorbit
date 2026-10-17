@@ -4,6 +4,7 @@ import { updatePassword } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import { AppLayout, PageContainer } from '../../components/layout/AppLayout';
 import { dataStore, type UserSettings } from '../../services/dataService';
+import styles from './SharedPages.module.css';
 
 type Tab = 'general' | 'notifications' | 'security' | 'appearance';
 
@@ -80,7 +81,7 @@ export function Settings(): JSX.Element {
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', margin: '20px 0 24px 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+        <div className={styles.tabs}>
           {([
             ['general', 'General', <Sliders key="g" size={16} />],
             ['notifications', 'Notifications', <Bell key="n" size={16} />],
@@ -88,7 +89,7 @@ export function Settings(): JSX.Element {
             ['appearance', 'Appearance', <Palette key="a" size={16} />],
           ] as Array<[Tab, string, JSX.Element]>).map(([t, label, icon]) => (
             <button key={t} onClick={() => setTab(t)}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '8px', background: tab === t ? '#EEF2FF' : 'transparent', color: tab === t ? 'var(--primary-700)' : 'var(--text-secondary)', border: 'none', fontSize: '13.5px', fontWeight: tab === t ? 600 : 500, cursor: 'pointer' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '8px', background: tab === t ? 'var(--pale-blue)' : 'transparent', color: tab === t ? 'var(--primary-700)' : 'var(--text-secondary)', border: 'none', fontSize: '13.5px', fontWeight: tab === t ? 600 : 500, cursor: 'pointer' }}>
               {icon}
               <span>{label}</span>
             </button>
@@ -99,7 +100,7 @@ export function Settings(): JSX.Element {
           {tab === 'general' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>General</h3>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className={styles.preferenceRow}>
                 <div>
                   <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Time Zone</h4>
                   <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: 'var(--text-secondary)' }}>Shown on your profile and used for timestamps.</p>
@@ -111,7 +112,7 @@ export function Settings(): JSX.Element {
                   <option value="Europe/London">Europe/London</option>
                 </select>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
+              <div className={styles.preferenceRow} style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
                 <div>
                   <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Date Format</h4>
                   <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: 'var(--text-secondary)' }}>Applies to every date shown across the app.</p>
@@ -132,7 +133,7 @@ export function Settings(): JSX.Element {
                 ['reviewAlerts', 'Browser Alerts for Reviews', 'Pop-up when submissions, revisions or approvals arrive.'],
                 ['conflictAlerts', 'Browser Alerts for Conflicts', 'Pop-up when a deadline conflict involves your work.'],
               ] as Array<[keyof UserSettings, string, string]>).map(([key, title, desc]) => (
-                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div key={key} className={styles.preferenceRow}>
                   <div>
                     <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>{title}</h4>
                     <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: 'var(--text-secondary)' }}>{desc}</p>
@@ -155,8 +156,8 @@ export function Settings(): JSX.Element {
                   onChange={(e) => setNewPassword(e.target.value)}
                   style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }} />
               </div>
-              {secError !== '' && <p role="alert" style={{ color: '#EF4444', fontSize: '13px' }}>{secError}</p>}
-              {secOk && <p style={{ color: '#15803D', fontSize: '13px' }}>Password changed.</p>}
+              {secError !== '' && <p role="alert" style={{ color: 'var(--danger-dark)', fontSize: '13px' }}>{secError}</p>}
+              {secOk && <p style={{ color: 'var(--green-600)', fontSize: '13px' }}>Password changed.</p>}
               <div>
                 <button onClick={() => { void changePassword(); }}
                   style={{ padding: '10px 20px', borderRadius: '8px', background: 'var(--primary-600)', color: '#FFFFFF', fontWeight: 600, fontSize: '13.5px', border: 'none', cursor: 'pointer' }}>
@@ -169,7 +170,7 @@ export function Settings(): JSX.Element {
           {tab === 'appearance' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Appearance</h3>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className={styles.preferenceRow}>
                 <div>
                   <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Compact Tables</h4>
                   <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
@@ -180,7 +181,7 @@ export function Settings(): JSX.Element {
                   style={{ width: '18px', height: '18px', accentColor: 'var(--primary-600)', cursor: 'pointer' }} aria-label="Compact tables" />
               </div>
               <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-secondary)' }}>
-                Theme: Light (the approved TaskOrbit reference theme).
+                Theme: Light · TaskOrbit Blue.
               </p>
             </div>
           )}

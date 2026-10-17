@@ -3,9 +3,10 @@
 .labelRequired { color: var(--text-tertiary); font-weight: 600; }
 .input { width: 100%; min-height: 2.45rem; padding: 0.6rem 0.75rem; color: var(--text-primary); border: 1px solid var(--border); border-radius: 0.65rem; outline: 0; background: var(--surface); font-size: 0.8rem; transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast); }
 .input:hover:not(:focus) { border-color: var(--border-strong); }
-.input:focus { border-color: var(--primary); box-shadow: 0 0 0 0.22rem rgba(79, 91, 213, 0.12); }
+.input:focus { border-color: var(--action-blue); box-shadow: var(--focus-ring); }
 .input::placeholder { color: var(--text-tertiary); }
 .input.errorInput { border-color: var(--red-500); }
-.input.errorInput:focus { box-shadow: 0 0 0 0.22rem rgba(216, 92, 103, 0.14); }
+.input.errorInput:focus { box-shadow: var(--danger-focus-ring); }
 .error { color: var(--red-700); font-size: 0.72rem; line-height: 1.4; }
 .hint { color: var(--text-tertiary); font-size: 0.72rem; line-height: 1.4; }
+@media (max-height: 760px) and (min-width: 861px) { .wrap { gap: .25rem; margin-bottom: .65rem; } .input { min-height: 2rem; padding-block: .4rem; } }

@@ -38,7 +38,7 @@ export function StatusBadge({ status, size = 'md', dot = false }: StatusBadgePro
 
 export function PriorityDot({ priority }: { priority: string }): JSX.Element {
   const norm = (priority || 'medium').toLowerCase();
-  const color = norm === 'high' ? '#EF4444' : norm === 'medium' ? '#F59E0B' : '#10B981';
+  const color = norm === 'high' ? 'var(--danger)' : norm === 'medium' ? 'var(--warning)' : 'var(--action-blue)';
   return (
     <span
       style={{
@@ -47,7 +47,7 @@ export function PriorityDot({ priority }: { priority: string }): JSX.Element {
         gap: '6px',
         fontSize: '12px',
         fontWeight: 600,
-        color: '#475569',
+        color: 'var(--text-secondary)',
       }}
     >
       <span

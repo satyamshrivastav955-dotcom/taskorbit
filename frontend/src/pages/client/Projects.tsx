@@ -55,7 +55,7 @@ export function ClientProjects(): JSX.Element {
     <AppLayout role="client" createButtonLabel="New Project Request">
       <PageContainer>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '8px' }}>
           <div>
             <h1 style={{ fontSize: '26px', fontWeight: 700 }}>Projects</h1>
             <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>
@@ -163,7 +163,7 @@ export function ClientProjects(): JSX.Element {
                   >
                     <td style={{ padding: '14px 20px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'var(--pale-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           <FolderKanban size={18} color="var(--primary)" />
                         </div>
                         <div style={{ minWidth: 0 }}>

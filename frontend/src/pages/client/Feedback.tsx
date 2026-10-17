@@ -149,8 +149,8 @@ export function ClientFeedback(): JSX.Element {
                     </div>
                     <span
                       style={{
-                         background: fb.status === 'Resolved' ? 'var(--sage-wash)' : fb.status === 'In Progress' ? 'var(--gold-wash)' : 'var(--terracotta-wash)',
-                         color: fb.status === 'Resolved' ? 'var(--forest)' : fb.status === 'In Progress' ? '#856921' : 'var(--red-700)',
+                          background: fb.status === 'Resolved' ? 'var(--success-wash)' : 'var(--pale-blue)',
+                          color: fb.status === 'Resolved' ? 'var(--green-600)' : 'var(--professional-blue)',
                         padding: '2px 8px',
                         borderRadius: '9999px',
                         fontSize: '11px',
@@ -223,7 +223,7 @@ export function ClientFeedback(): JSX.Element {
                   borderRadius: '8px',
                   fontSize: '13.5px',
                   fontWeight: 600,
-                  boxShadow: '0 2px 6px rgba(79, 70, 229, 0.2)',
+                  boxShadow: 'var(--shadow-sm)',
                   marginTop: '4px',
                   display: 'flex',
                   alignItems: 'center',

@@ -61,8 +61,8 @@ export function AssigneeTaskDetail(): JSX.Element {
     <AppLayout role="assignee">
       <PageContainer>
         {/* Breadcrumb */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
             <button
               onClick={() => navigate('/assignee/tasks')}
               style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)' }}
@@ -76,18 +76,18 @@ export function AssigneeTaskDetail(): JSX.Element {
             <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{task.title}</span>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
             {task.status === 'todo' && (
               <button
                 onClick={handleStartTask}
                 style={{
                   padding: '8px 16px',
-                  background: '#EEF2FF',
+                  background: 'var(--pale-blue)',
                   color: 'var(--primary)',
                   borderRadius: '8px',
                   fontSize: '13px',
                   fontWeight: 600,
-                  border: '1px solid #C7D2FE',
+                  border: '1px solid var(--info-border)',
                 }}
               >
                 Start Task
@@ -107,7 +107,7 @@ export function AssigneeTaskDetail(): JSX.Element {
                 borderRadius: '8px',
                 fontSize: '13.5px',
                 fontWeight: 600,
-                 boxShadow: task.status === 'in_progress' ? '0 2px 8px rgba(79, 70, 229, 0.25)' : 'none',
+                 boxShadow: task.status === 'in_progress' ? 'var(--shadow-sm)' : 'none',
                  opacity: task.status === 'in_progress' ? 1 : 0.55,
                  cursor: task.status === 'in_progress' ? 'pointer' : 'not-allowed',
               }}
@@ -128,10 +128,12 @@ export function AssigneeTaskDetail(): JSX.Element {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '16px',
           }}
         >
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
               <h1 style={{ fontSize: '22px', fontWeight: 700 }}>{task.title}</h1>
               <StatusBadge status={task.status} size="md" />
             </div>
@@ -295,7 +297,7 @@ export function AssigneeTaskDetail(): JSX.Element {
                   borderRadius: '8px',
                   fontSize: '13.5px',
                   fontWeight: 600,
-                  boxShadow: '0 2px 8px rgba(79, 70, 229, 0.25)',
+                  boxShadow: 'var(--shadow-sm)',
                 }}
               >
                 Submit Work for Review →

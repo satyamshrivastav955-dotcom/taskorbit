@@ -10,7 +10,7 @@ const DAY_NAMES = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 function barColor(status: string): string {
   if (status === 'approved') return 'var(--green-500)';
   if (status === 'revision') return 'var(--amber-500)';
-  if (status === 'in_progress') return 'var(--teal-600)';
+  if (status === 'in_progress') return 'var(--professional-blue)';
   if (status === 'submitted' || status === 'in_review') return 'var(--blue-600)';
   return 'var(--slate-600)';
 }

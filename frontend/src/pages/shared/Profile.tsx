@@ -91,9 +91,9 @@ export function Profile(): JSX.Element {
     <AppLayout role={me.role}>
       <PageContainer>
         <div style={{ background: '#FFFFFF', border: '1px solid var(--border-color)', borderRadius: '16px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', marginBottom: '24px' }}>
-          <div style={{ height: '140px', background: 'var(--forest)', position: 'relative' }} />
+          <div style={{ height: '96px', background: 'var(--deep-navy)', position: 'relative' }} />
           <div style={{ padding: '0 32px 32px 32px', position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '20px', marginTop: '-50px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px', marginTop: '-32px', minWidth: 0 }}>
               <div style={{ border: '4px solid #FFFFFF', borderRadius: '50%', background: '#FFFFFF', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                 <Avatar name={me.name !== '' && me.name !== me.email ? me.name : me.email} size="xl" />
               </div>
@@ -102,11 +102,11 @@ export function Profile(): JSX.Element {
                   <h1 style={{ fontSize: '24px', fontWeight: 700, margin: 0 }}>
                     {me.name !== '' && me.name !== me.email ? me.name : '—'}
                   </h1>
-                   <span style={{ background: 'var(--sage-wash)', color: 'var(--forest-dark)', padding: '3px 10px', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase' }}>
+                   <span style={{ background: 'var(--pale-blue)', color: 'var(--professional-blue)', padding: '3px 10px', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase' }}>
                     {me.role}
                   </span>
                 </div>
-                <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
+                <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: 'var(--text-secondary)', overflowWrap: 'anywhere' }}>
                   {me.email}
                 </p>
                 {(me.name === '' || me.name === me.email) && !editing && (
@@ -119,10 +119,10 @@ export function Profile(): JSX.Element {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', margin: '0 0 24px 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', margin: '0 0 24px 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
           {([['personal', 'Personal Info'], ['account', 'Account'], ['security', 'Security'], ['preferences', 'Preferences']] as Array<[Tab, string]>).map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)}
-              style={{ padding: '8px 16px', borderRadius: '8px', background: tab === t ? '#EEF2FF' : 'transparent', color: tab === t ? 'var(--primary-700)' : 'var(--text-secondary)', border: 'none', fontSize: '13.5px', fontWeight: tab === t ? 600 : 500, cursor: 'pointer' }}>
+              style={{ padding: '8px 16px', borderRadius: '8px', background: tab === t ? 'var(--pale-blue)' : 'transparent', color: tab === t ? 'var(--primary-700)' : 'var(--text-secondary)', border: 'none', fontSize: '13.5px', fontWeight: tab === t ? 600 : 500, cursor: 'pointer' }}>
               {label}
             </button>
           ))}
@@ -219,15 +219,15 @@ export function Profile(): JSX.Element {
                   </div>
                   <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
                     <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Requirements</span>
-                    <span style={{ fontSize: '20px', fontWeight: 700, color: '#10B981' }}>{allReqs.length}</span>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>{allReqs.length}</span>
                   </div>
                   <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
                     <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Feedback Sent</span>
-                    <span style={{ fontSize: '20px', fontWeight: 700, color: '#6366F1' }}>{allFeedback.length}</span>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>{allFeedback.length}</span>
                   </div>
                   <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
                     <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Active Scope</span>
-                    <span style={{ fontSize: '20px', fontWeight: 700, color: '#10B981' }}>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>
                       {allProjects.filter((p) => p.status === 'active' || p.status === 'on_track').length}
                     </span>
                   </div>
@@ -240,15 +240,15 @@ export function Profile(): JSX.Element {
                   </div>
                   <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
                     <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Completed</span>
-                    <span style={{ fontSize: '20px', fontWeight: 700, color: '#10B981' }}>{approvedCount}</span>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--green-600)' }}>{approvedCount}</span>
                   </div>
                   <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
                     <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Approval Rate</span>
-                    <span style={{ fontSize: '20px', fontWeight: 700, color: '#6366F1' }}>{approvalRate}%</span>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>{approvalRate}%</span>
                   </div>
                   <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px' }}>
                     <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Conflict Rate</span>
-                    <span style={{ fontSize: '20px', fontWeight: 700, color: '#10B981' }}>{conflictRate}%</span>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)' }}>{conflictRate}%</span>
                   </div>
                 </>
               )}
@@ -260,7 +260,7 @@ export function Profile(): JSX.Element {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {myProjects.length === 0 && <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>No projects yet.</p>}
               {myProjects.map((proj) => (
-                <div key={proj.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: '#FAFBFD' }}>
+                <div key={proj.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', padding: '14px 18px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'var(--surface-muted)' }}>
                   <div>
                     <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>{proj.title}</h4>
                     <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>Deadline: {proj.deadline}</p>

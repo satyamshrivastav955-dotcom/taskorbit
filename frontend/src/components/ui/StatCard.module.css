@@ -1,8 +1,8 @@
 .card { display: flex; flex-direction: column; justify-content: space-between; min-height: 9.65rem; padding: 1.15rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-sm); transition: border-color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base); }
-.card:hover { border-color: #cbd5e4; box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.card:hover { border-color: var(--border-strong); }
 .header { display: flex; align-items: center; gap: 0.8rem; }
 .iconWrap { display: grid; place-items: center; width: 2.65rem; height: 2.65rem; flex: 0 0 auto; border-radius: 0.72rem; }
-.purple { color: var(--primary); background: var(--primary-50); } .green { color: var(--green-600); background: #eaf8f2; } .blue { color: #287fbd; background: #ebf5fc; } .red { color: var(--red-700); background: var(--red-100); } .amber { color: var(--amber-500); background: #fff6e5; }
+.purple, .blue { color: var(--professional-blue); background: var(--pale-blue); } .green { color: var(--green-600); background: var(--success-wash); } .red { color: var(--red-700); background: var(--danger-wash); } .amber { color: var(--warning-text); background: var(--warning-wash); }
 .valueGroup { display: flex; min-width: 0; flex-direction: column; }
 .value { color: var(--text-primary); font-size: 1.65rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .label { margin-top: 0.25rem; color: var(--text-secondary); font-size: 0.74rem; font-weight: 700; }

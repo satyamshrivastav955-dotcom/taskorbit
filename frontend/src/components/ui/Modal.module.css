@@ -1,5 +1,5 @@
-.overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding: clamp(1rem, 6vh, 3.5rem) 1rem; background: rgba(12, 18, 32, 0.54); animation: overlayIn 180ms ease both; }
-.box { width: min(32.5rem, 100%); max-height: calc(100vh - 2rem); overflow-y: auto; padding: clamp(1.1rem, 3vw, 1.5rem); border: 1px solid rgba(255, 255, 255, 0.68); border-radius: var(--radius-xl); background: var(--surface); box-shadow: var(--shadow-xl); animation: modalIn 220ms var(--ease-out) both; }
+.overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding: clamp(1rem, 6vh, 3.5rem) 1rem; background: var(--overlay); animation: overlayIn 180ms ease both; }
+.box { width: min(32.5rem, 100%); max-height: calc(100dvh - 2rem); overflow-y: auto; padding: clamp(1.1rem, 3vw, 1.5rem); border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--surface); box-shadow: var(--shadow-xl); animation: modalIn 220ms var(--ease-out) both; }
 .wide { width: min(40rem, 100%); }
 .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.15rem; padding-bottom: 0.95rem; border-bottom: 1px solid var(--border-light); }
 .head h3 { color: var(--text-primary); font-size: 1.1rem; font-weight: 700; }

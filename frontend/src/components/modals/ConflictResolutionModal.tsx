@@ -84,7 +84,7 @@ export function ConflictResolutionModal({
             </div>
             <div className={styles.detailsRow}>
               <span className={styles.detailsLabel}>Overlaps with:</span>
-              <span className={styles.detailsValue} style={{ color: '#EF4444', fontWeight: 600 }}>
+              <span className={styles.detailsValue} style={{ color: 'var(--danger-dark)', fontWeight: 600 }}>
                 {conflict.taskB.title} ({conflict.taskB.startDate} – {conflict.taskB.deadline})
               </span>
             </div>
@@ -190,7 +190,7 @@ export function ConflictResolutionModal({
             {pending ? 'Resolving...' : 'Resolve Conflict'}
           </button>
         </div>
-        {error !== '' && <p role="alert" style={{ color: '#EF4444', fontSize: '13px', padding: '0 24px 16px 24px' }}>{error}</p>}
+        {error !== '' && <p role="alert" style={{ color: 'var(--danger-dark)', fontSize: '13px', padding: '0 24px 16px 24px' }}>{error}</p>}
       </div>
     </div>
   );

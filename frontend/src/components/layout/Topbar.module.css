@@ -1,20 +1,20 @@
 .topbar {
   position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between;
-  min-height: 4rem; padding: 0 clamp(1rem, 4vw, 4.5rem); color: var(--text-primary);
-  background: var(--warm-ivory); border-bottom: 1px solid var(--border);
+  min-height: 3rem; padding: 0 clamp(1rem, 4vw, 4.5rem); color: var(--text-primary);
+  background: var(--surface); border-bottom: 1px solid var(--border);
   box-shadow: none;
 }
 .searchWrapper { position: relative; display: flex; align-items: center; gap: 0.65rem; width: min(27rem, 42vw); padding: 0.61rem 0.9rem; border: 1px solid var(--border); border-radius: 0.35rem; background: var(--surface); transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast); }
-.searchWrapper:focus-within { border-color: var(--forest); background: var(--paper); box-shadow: 0 0 0 0.2rem rgba(48, 72, 59, 0.1); }
+.searchWrapper:focus-within { border-color: var(--action-blue); background: var(--surface); box-shadow: var(--focus-ring); }
 .searchIcon { flex: 0 0 auto; color: var(--text-tertiary); }
 .searchInput { width: 100%; min-width: 0; padding: 0; color: var(--text-primary); border: 0; outline: 0; background: transparent; font-size: 0.79rem; }
 .searchInput::placeholder { color: var(--text-tertiary); }
 .actions { display: flex; align-items: center; gap: 0.65rem; }
-.createBtn { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 2.35rem; padding: 0 0.9rem; color: var(--warm-ivory); border: 1px solid var(--forest); border-radius: 0.35rem; background: var(--forest); box-shadow: none; font-size: 0.77rem; font-weight: 700; transition: background var(--transition-fast), box-shadow var(--transition-fast); }
-.createBtn:hover { background: var(--forest-dark); box-shadow: none; }
+.createBtn { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 2.35rem; padding: 0 0.9rem; color: var(--on-primary); border: 1px solid var(--primary); border-radius: var(--radius-md); background: var(--primary); box-shadow: var(--shadow-sm); font-size: 0.77rem; font-weight: 700; transition: background var(--transition-fast), border-color var(--transition-fast); }
+.createBtn:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
 .createBtn:active { transform: translateY(0); }
 .iconBtn { position: relative; display: grid; place-items: center; width: 2.35rem; height: 2.35rem; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 0.35rem; background: transparent; transition: color var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast); }
-.iconBtn:hover { color: var(--text-primary); border-color: var(--forest); background: var(--surface-hover); }
+.iconBtn:hover { color: var(--professional-blue); border-color: var(--action-blue); background: var(--pale-blue); }
 .unreadDot { position: absolute; top: 0.4rem; right: 0.4rem; width: 0.42rem; height: 0.42rem; border: 2px solid var(--surface); border-radius: 50%; background: var(--red-500); }
 .profileWrapper { position: relative; }
 .profilePill { display: flex; align-items: center; gap: 0.55rem; min-height: 2.55rem; padding: 0.2rem 0.6rem 0.2rem 0.25rem; color: var(--text-primary); border: 1px solid var(--border); border-radius: 0.35rem; background: transparent; transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast); }
@@ -37,7 +37,7 @@
 .mobileMenu { display: none; }
 @media (max-width: 600px) { .mobileMenu { display: grid; } .searchWrapper { margin-right: auto; margin-left: .5rem; } }
 @media (max-width: 760px) {
-  .topbar { min-height: 4rem; padding-inline: 0.9rem; }
+  .topbar { min-height: 3.25rem; padding-inline: 0.9rem; }
   .searchWrapper { width: min(15rem, 45vw); }
   .profileInfo, .profileChevron { display: none; }
   .profilePill { padding-right: 0.25rem; border: 0; background: transparent; }
@@ -46,7 +46,7 @@
   .createBtn { width: 2.35rem; justify-content: center; padding: 0; }
 }
 @media (max-width: 460px) {
-  .searchWrapper { width: 2.35rem; padding: 0; justify-content: center; border-radius: 0.68rem; }
+  .searchWrapper { width: 2.35rem; height: 2.35rem; padding: 0; justify-content: center; border-radius: var(--radius-md); }
   .searchInput { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
   .actions { gap: 0.35rem; }
   .searchExpanded { position: absolute; top: .5rem; left: .75rem; right: .75rem; width: auto; height: 3rem; padding: .6rem .9rem; z-index: 65; justify-content: flex-start; }

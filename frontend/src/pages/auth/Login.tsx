@@ -181,21 +181,21 @@ export function Login(): JSX.Element {
           {/* large sweeping arc from top-right to bottom-left */}
           <path
             d="M 720 60 Q 380 400 140 700"
-            stroke="rgba(53,185,194,0.3)"
+            stroke="currentColor"
             strokeWidth="1.5"
             fill="none"
           />
           {/* secondary arc crossing the panel */}
           <path
             d="M 600 -40 Q 200 380 80 780"
-            stroke="rgba(130,144,245,0.24)"
+            stroke="currentColor"
             strokeWidth="1"
             fill="none"
           />
           {/* small arc near top */}
           <path
             d="M 420 240 Q 560 300 680 220"
-            stroke="rgba(53,185,194,0.2)"
+            stroke="currentColor"
             strokeWidth="1"
             fill="none"
           />
@@ -227,17 +227,17 @@ export function Login(): JSX.Element {
           </p>
 
           <ul className={styles.features}>
-            <li><CheckCircle2 size={17} strokeWidth={2} color="#35B9C2" /> Role-based workflow</li>
-            <li><CheckCircle2 size={17} strokeWidth={2} color="#35B9C2" /> Smart task allocation</li>
-            <li><CheckCircle2 size={17} strokeWidth={2} color="#35B9C2" /> Deadline conflict detection</li>
-            <li><CheckCircle2 size={17} strokeWidth={2} color="#35B9C2" /> Real-time project progress</li>
+            <li><CheckCircle2 size={17} strokeWidth={2} /> Role-based workflow</li>
+            <li><CheckCircle2 size={17} strokeWidth={2} /> Smart task allocation</li>
+            <li><CheckCircle2 size={17} strokeWidth={2} /> Deadline conflict detection</li>
+            <li><CheckCircle2 size={17} strokeWidth={2} /> Real-time project progress</li>
           </ul>
 
           {/* Floating dashboard preview */}
           <div className={styles.preview}>
             {/* "On track" badge — top of preview, offset right */}
             <div className={styles.onTrack}>
-              <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <CheckCircle2 size={14} strokeWidth={2.5} color="#fff" />
               </span>
               <div>

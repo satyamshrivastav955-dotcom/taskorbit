@@ -66,8 +66,8 @@ export function ReviewDecisionModal({
               />
               <div className={styles.radioContent}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <CheckCircle2 size={16} color="#10B981" />
-                  <span className={styles.radioTitle} style={{ color: '#10B981' }}>Approve</span>
+                  <CheckCircle2 size={16} color="var(--success)" />
+                  <span className={styles.radioTitle} style={{ color: 'var(--green-600)' }}>Approve</span>
                 </div>
                 <div className={styles.radioDesc}>
                   The submission meets all requirements and is approved. Task will be marked as complete.
@@ -86,8 +86,8 @@ export function ReviewDecisionModal({
               />
               <div className={styles.radioContent}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <RotateCcw size={16} color="#EF4444" />
-                  <span className={styles.radioTitle} style={{ color: '#EF4444' }}>Request Revision</span>
+                  <RotateCcw size={16} color="var(--danger)" />
+                  <span className={styles.radioTitle} style={{ color: 'var(--danger-dark)' }}>Request Revision</span>
                 </div>
                 <div className={styles.radioDesc}>
                   The submission needs changes before it can be approved. Assignee will be notified.
@@ -98,7 +98,7 @@ export function ReviewDecisionModal({
 
           <div className={styles.field}>
             <label className={styles.label}>
-              Feedback Comments {decision === 'rejected' && <span style={{ color: '#EF4444' }}>*</span>}
+              Feedback Comments {decision === 'rejected' && <span style={{ color: 'var(--danger)' }}>*</span>}
             </label>
             <textarea
               className={styles.textarea}
@@ -116,7 +116,7 @@ export function ReviewDecisionModal({
 
           <p style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>The assignee will be notified automatically when your decision is saved.</p>
 
-          {error !== '' && <p role="alert" style={{ color: '#EF4444', fontSize: '13px' }}>{error}</p>}
+          {error !== '' && <p role="alert" style={{ color: 'var(--danger-dark)', fontSize: '13px' }}>{error}</p>}
 
           <div className={styles.footer} style={{ margin: '0 -24px -24px -24px' }}>
             <button type="button" className={styles.cancelBtn} onClick={onClose} disabled={pending}>
@@ -127,7 +127,7 @@ export function ReviewDecisionModal({
               className={styles.submitBtn}
               disabled={pending}
               style={{
-                 background: decision === 'approved' ? 'var(--forest)' : 'var(--terracotta)',
+                  background: decision === 'approved' ? 'var(--success)' : 'var(--danger)',
               }}
             >
               {pending ? 'Saving…' : decision === 'approved' ? 'Approve Task' : 'Request Revision'}

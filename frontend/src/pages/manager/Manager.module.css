@@ -159,7 +159,7 @@
   border-radius: var(--radius-md);
   font-size: 12.5px;
   font-weight: 600;
-  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Projects Table / Rows */
@@ -190,7 +190,7 @@
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background-color: #EEF2FF;
+  background-color: var(--pale-blue);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -251,7 +251,7 @@
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  color: #EF4444;
+  color: var(--danger);
   letter-spacing: 0.05em;
   padding: 2px 0;
 }
@@ -270,7 +270,7 @@
   width: 30px;
   height: 30px;
   border-radius: 6px;
-  background-color: #EEF2FF;
+  background-color: var(--pale-blue);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -355,18 +355,18 @@
 }
 
 .statusRed {
-  background: #FEE2E2;
-  color: #DC2626;
+  background: var(--danger-wash);
+  color: var(--danger-dark);
 }
 
 .statusAmber {
-  background: #FEF3C7;
-  color: #D97706;
+  background: var(--warning-wash);
+  color: var(--warning-text);
 }
 
 .statusGreen {
-  background: #DCFCE7;
-  color: #16A34A;
+  background: var(--success-wash);
+  color: var(--green-600);
 }
 
 .emptyState {

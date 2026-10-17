@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { X, UploadCloud, FileText } from 'lucide-react';
 import { dataStore } from '../../services/demoData';
 import { ErrorDialog } from '../ui/Dialogs';
@@ -22,10 +22,13 @@ export function SubmitWorkModal({ taskId, taskTitle, onClose, onSubmitted }: Sub
   const [progress, setProgress] = useState(0);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState('');
+  const [cancelled, setCancelled] = useState(false);
+  const controllerRef = useRef<AbortController | null>(null);
   const dialogRef = useDialog(onClose, pending);
 
   function pick(list: FileList | null): void {
     if (list === null || pending) return;
+    setCancelled(false);
     const picked = Array.from(list);
     if (picked.some((file) => file.size <= 0 || file.size > MAX_BYTES)) {
       setFailed('Each deliverable must be between 1 byte and 50 MB. Choose smaller, non-empty files.');
@@ -47,23 +50,62 @@ export function SubmitWorkModal({ taskId, taskTitle, onClose, onSubmitted }: Sub
     }
     setPending(true);
     setFailed('');
+    setCancelled(false);
+    controllerRef.current = new AbortController();
     try {
       await dataStore.submitTask(
         taskId,
         { note: note.trim() === '' ? 'Deliverable uploaded for review.' : note.trim(), files },
         (pct) => setProgress(pct),
+        controllerRef.current.signal,
       );
+      if (controllerRef.current.signal.aborted) {
+        setCancelled(true);
+        return;
+      }
       onSubmitted();
       onClose();
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setCancelled(true);
+        return;
+      }
       setFailed(err instanceof Error ? err.message : 'Upload failed. Check your connection and try again.');
     } finally {
       setPending(false);
+      controllerRef.current = null;
     }
   }
 
+  function cancelUpload(): void {
+    controllerRef.current?.abort();
+    setCancelled(true);
+  }
+
+  if (cancelled) {
+    return (
+      <div className={styles.backdrop} onClick={onClose}>
+        <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Upload cancelled" tabIndex={-1} className={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.header}>
+            <h2 className={styles.title}>Upload cancelled</h2>
+            <button type="button" className={styles.closeBtn} onClick={onClose} disabled={pending} aria-label="Close">
+              <X size={18} />
+            </button>
+          </div>
+          <div className={styles.content}>
+            <p>The upload was stopped before the submission was saved. No submission record was created. You can try again with the same files.</p>
+          </div>
+          <div className={styles.footer} style={{ margin: '0 -24px -24px -24px' }}>
+            <button type="button" className={styles.cancelBtn} onClick={onClose}>Close</button>
+            <button type="button" className={styles.submitBtn} onClick={() => { setCancelled(false); setProgress(0); }}>Try again</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (failed !== '') {
-    return <ErrorDialog title="Upload Failed" body={failed} onRetry={() => setFailed('')} onCancel={onClose} />;
+    return <ErrorDialog title="Upload Failed" body={failed} onRetry={() => { setFailed(''); setProgress(0); }} onCancel={onClose} />;
   }
 
   return (
@@ -156,18 +198,27 @@ export function SubmitWorkModal({ taskId, taskTitle, onClose, onSubmitted }: Sub
           </div>}
 
           <div className={styles.footer} style={{ margin: '0 -24px -24px -24px' }}>
-            {step === 1 ? (
+            {pending ? (
               <>
-                <button type="button" className={styles.cancelBtn} onClick={onClose}>Cancel</button>
+                <button type="button" className={styles.cancelBtn} onClick={cancelUpload}>Cancel upload</button>
+                <button type="button" className={styles.submitBtn} disabled>
+                  {step === 1 ? `Uploading ${progress}%...` : `Saving submission ${progress}%...`}
+                </button>
+              </>
+            ) : step === 1 ? (
+              <>
+                <button type="button" className={styles.cancelBtn} onClick={onClose}>
+                  Cancel
+                </button>
                 <button type="button" className={styles.submitBtn} onClick={() => setStep(2)} disabled={files.length === 0}>
                   Next: Add Notes →
                 </button>
               </>
             ) : (
               <>
-                <button type="button" className={styles.cancelBtn} onClick={() => setStep(1)} disabled={pending}>← Back</button>
-                <button type="submit" className={styles.submitBtn} disabled={pending}>
-                  {pending ? `Uploading ${progress}%...` : 'Submit for Review'}
+                <button type="button" className={styles.cancelBtn} onClick={() => setStep(1)}>← Back</button>
+                <button type="submit" className={styles.submitBtn}>
+                  Submit for Review
                 </button>
               </>
             )}

@@ -62,7 +62,7 @@ export function ClientRequirements(): JSX.Element {
     <AppLayout role="client" createButtonLabel="New Requirement">
       <PageContainer>
         {/* Header matching Reference Image 12 screen 4 */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '8px' }}>
           <div>
             <h1 style={{ fontSize: '26px', fontWeight: 700 }}>Requirements</h1>
             <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>
@@ -89,7 +89,7 @@ export function ClientRequirements(): JSX.Element {
         </div>
 
         {/* Filter Pills */}
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
           {(['all', 'pending', 'in_progress', 'completed'] as const).map((t) => (
             <button
               key={t}
@@ -110,7 +110,7 @@ export function ClientRequirements(): JSX.Element {
         </div>
 
         {/* Requirements Table */}
-        <div style={{ background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: '14px', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflowX: 'auto' }}>
           {loading && requirements.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
               <Loader2 size={36} color="var(--primary)" style={{ margin: '0 auto 12px', animation: 'spin 1s linear infinite' }} />
@@ -144,7 +144,7 @@ export function ClientRequirements(): JSX.Element {
               )}
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', minWidth: '640px', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
                   <th style={{ padding: '12px 20px', fontSize: '12px', color: 'var(--text-secondary)' }}>Title</th>
@@ -186,8 +186,8 @@ export function ClientRequirements(): JSX.Element {
 
         {/* Add Requirement Modal */}
         {showAddModal && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-            <div style={{ background: '#FFF', padding: '24px', borderRadius: '14px', width: '480px', maxWidth: '90%' }}>
+          <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '16px' }}>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-xl)', padding: '24px', borderRadius: 'var(--radius-xl)', width: '480px', maxWidth: '100%', maxHeight: '90dvh', overflowY: 'auto' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>Submit New Requirement</h2>
               <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
@@ -226,7 +226,7 @@ export function ClientRequirements(): JSX.Element {
                     Submit Requirement
                   </button>
                 </div>
-                {formError !== '' && <p role="alert" style={{ color: '#EF4444', fontSize: '13px' }}>{formError}</p>}
+                {formError !== '' && <p role="alert" style={{ color: 'var(--danger-dark)', fontSize: '13px' }}>{formError}</p>}
               </form>
             </div>
           </div>

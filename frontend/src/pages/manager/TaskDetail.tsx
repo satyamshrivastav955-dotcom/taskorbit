@@ -67,8 +67,8 @@ export function ManagerTaskDetail(): JSX.Element {
     <AppLayout role="manager">
       <PageContainer>
         {/* Breadcrumb Navigation */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
             <button
               onClick={() => navigate('/manager/tasks')}
               style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)' }}
@@ -82,7 +82,7 @@ export function ManagerTaskDetail(): JSX.Element {
             <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{task.title}</span>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
             {!['submitted', 'in_review', 'approved'].includes(task.status) && <button type="button" onClick={() => setEditingTask(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', color: '#fff', background: 'var(--primary)', borderRadius: '8px', fontSize: '13px' }}><Edit2 size={14} /> Edit task</button>}
              <button onClick={() => navigate('/manager/tasks')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
                <ArrowLeft size={15} />
@@ -101,15 +101,18 @@ export function ManagerTaskDetail(): JSX.Element {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '16px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0 }}>
             <div
               style={{
                 width: '50px',
                 height: '50px',
+                flexShrink: 0,
                 borderRadius: '12px',
-                background: '#EEF2FF',
+                background: 'var(--pale-blue)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -118,11 +121,11 @@ export function ManagerTaskDetail(): JSX.Element {
               <CheckSquare size={24} color="var(--primary)" />
             </div>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <h1 style={{ fontSize: '22px', fontWeight: 700 }}>{task.title}</h1>
                 <StatusBadge status={task.status} size="md" />
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '6px' }}>
                 <span>{task.projectName}</span>
                 <span>•</span>
                 <span>{task.taskIdCode || 'Task'}</span>
@@ -132,7 +135,7 @@ export function ManagerTaskDetail(): JSX.Element {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
             <PriorityBadge priority={task.priority} size="md" />
             {(task.labels || []).map((l, i) => (
               <span

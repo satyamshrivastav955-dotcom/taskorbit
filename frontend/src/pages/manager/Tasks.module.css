@@ -27,13 +27,13 @@
   border-radius: var(--radius-md);
   font-size: 13.5px;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+  box-shadow: var(--shadow-sm);
   transition: all 0.15s ease;
 }
 
 .createTaskBtn:hover {
   background: var(--primary-hover);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+  box-shadow: var(--shadow-sm);
 }
 
 .controlBar {
@@ -104,7 +104,7 @@
 }
 
 .activeToggle {
-  background: #EEF2FF;
+  background: var(--pale-blue);
   color: var(--primary);
   font-weight: 600;
 }
@@ -118,6 +118,7 @@
 }
 
 .boardGrid {
+  min-width: 0;
   display: grid;
   grid-template-columns: repeat(6, minmax(220px, 1fr));
   gap: 16px;
@@ -211,7 +212,7 @@
 
 .selectedCard {
   border-color: var(--primary) !important;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2) !important;
+  box-shadow: var(--focus-ring) !important;
 }
 
 .cardTop {
@@ -237,7 +238,7 @@
   align-items: center;
   gap: 6px;
   font-size: 11.5px;
-  color: #DC2626;
+  color: var(--danger-dark);
   font-weight: 500;
 }
 
@@ -264,10 +265,10 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #DC2626;
+  color: var(--danger-dark);
   font-size: 11px;
   font-weight: 600;
-  background: #FEE2E2;
+  background: var(--danger-wash);
   padding: 2px 6px;
   border-radius: 4px;
   width: fit-content;
@@ -275,15 +276,17 @@
 
 /* Table View */
 .tableCard {
+  min-width: 0;
   background: #FFFFFF;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow-x: auto;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   flex: 1;
 }
 
 .table {
+  min-width: 680px;
   width: 100%;
   border-collapse: collapse;
 }
@@ -499,6 +502,8 @@
 }
 
 @media (max-width: 760px) {
+  .mainLayout { flex-direction: column; align-items: stretch; }
+  .boardGrid { flex: none; }
   .header {
     align-items: flex-start;
     flex-direction: column;

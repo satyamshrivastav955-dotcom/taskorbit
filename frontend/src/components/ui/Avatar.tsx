@@ -24,7 +24,7 @@ function getInitials(name: string): string {
 }
 
 function getColor(name: string): string {
-  const colors = ['var(--forest)', 'var(--sage)', 'var(--terracotta)', 'var(--soft-gold)', 'var(--ink-soft)', 'var(--forest-dark)'];
+  const colors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--chart-6)'];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);

@@ -1,10 +1,16 @@
 # TaskOrbit — Product design rules
 
-## Current product-quality direction (2026-10-07)
+## Current product-quality direction (2026-10-09)
 
 The current product pass supersedes conflicting Phase 0 restrictions below:
-Inter typography, Lucide icons, calm ink/cloud surfaces, a restrained orbit accent,
-layered but subtle depth, and fast purposeful motion with reduced-motion support.
+Inter/system sans-serif typography, Lucide icons, deep navy navigation, white cards,
+crisp blue-grey borders, and fast purposeful motion with reduced-motion support.
+All four roles share the blue palette in `frontend/src/styles/theme.css`.
+Use semantic tokens for component colors; green, amber, and red communicate
+success, warning, and error rather than role identity or decorative branding.
+Filled buttons use professional blue (#245B91) for 7.05:1 white-text contrast;
+action blue (#367FC4) is used for focus rings, chart marks, and non-text accents.
+No gradients, glow, glassmorphism, floating-loop animations, or oversized cards.
 Overview screens prioritize actionable queues, project delivery, and activity;
 no fabricated sparklines, arbitrary workload percentages, or decorative charts.
 Every visible section must be connected to real application records, and every
@@ -41,28 +47,21 @@ before any page exists.
 - Empty states: one line of text plus one action. No illustration.
 - Numbers, dates and statuses are the visual focus.
 
-## Tokens (`frontend/src/styles/theme.css`, use ONLY these)
+## Current palette (`frontend/src/styles/theme.css` is the source of truth)
 
 ```css
---navy-900: #2D3F54;
---slate-600: #52647A;
---blue-700: #004C94;
---blue-600: #006ECF;
---blue-400: #3C93FA;
---teal-600: #0FA69D;
---teal-800: #028183;
---cyan-500: #00D4C6;
---green-500: #73CC80;
---amber-500: #E0A030;
---red-500: #D64545;
---bg: #F6F8FB;
---surface: #FFFFFF;
---border: #E2E8F0;
---text: #1F2A37;
---text-muted: #52647A;
+--deep-navy: #163B65;
+--professional-blue: #245B91;
+--action-blue: #367FC4;
+--pale-blue: #EAF2FA;
+--app-background: #F5F8FC;
+--surface-white: #FFFFFF;
+--text-strong: #243449;
+--border-blue: #DFE7F0;
 ```
 
-- `--cyan-500` sparingly, timeline highlights and active-nav marker only.
+- Existing color aliases resolve to this system for feature-page compatibility.
+- `--chart-1` through `--chart-6` provide blue series colors with readable labels.
 - Color only carries meaning (status, conflict, primary action).
 - UI is ~90% white, grey-blue and navy.
 
@@ -135,8 +134,15 @@ Human naming: `useTaskList`, `formatDateRange`, `TaskTable`.
 Never `Enhanced`, `Advanced`, `Ultimate`. Files under ~250 lines,
 small single-purpose components. No dead code, no commented-out blocks.
 
+## Verification
+
+`npm run build` performs TypeScript checking and the production Vite build.
+`npm run test:ui` covers role workflows, modal keyboard interaction, rendered
+text contrast, reduced motion, and responsive layouts from 320px to 1440px.
+Visual-check screenshots are generated in `test-results/`.
+
 ## JSP and Laravel pages
 
-Same rules: Inter, flat white cards, 1px `#E2E8F0` border, 8px radius,
-navy headings, blue links/buttons, `#F6F8FB` background, no Bootstrap,
+Same rules: Inter, flat white cards, 1px `#DFE7F0` border, 8px radius,
+navy headings, blue links/buttons, `#F5F8FC` background, no Bootstrap,
 one plain stylesheet per module, print stylesheet for reports.

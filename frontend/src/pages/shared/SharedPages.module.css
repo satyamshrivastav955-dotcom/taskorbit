@@ -1,0 +1,9 @@
+.tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin: .5rem 0; padding-bottom: .75rem; border-bottom: 1px solid var(--border); }
+.preferenceRow { display: flex; justify-content: space-between; align-items: center; gap: 1.25rem; }
+.preferenceRow > div { min-width: 0; }
+.preferenceRow input[type='checkbox'] { flex-shrink: 0; }
+.preferenceRow select { max-width: 100%; background: var(--surface); }
+@media (max-width: 640px) {
+  .preferenceRow { flex-wrap: wrap; gap: .75rem; }
+  .preferenceRow select { width: 100%; }
+}

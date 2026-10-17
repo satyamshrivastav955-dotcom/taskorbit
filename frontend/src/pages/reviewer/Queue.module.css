@@ -183,7 +183,7 @@
   gap: var(--space-2);
   padding: 6px 12px;
   border-radius: var(--radius-md);
-  background-color: #EEF2FF;
+  background-color: var(--pale-blue);
   border: 1px solid var(--primary-200);
   color: var(--primary-700);
   font-size: var(--font-xs);
@@ -264,6 +264,9 @@
 }
 
 @media (max-width: 640px) {
+  .searchWrapper { min-width: 0; width: 100%; }
+  .filterChips { flex-wrap: wrap; }
+  .statsGrid { grid-template-columns: 1fr; }
   .queueSearch {
     width: 100%;
     min-width: 0;

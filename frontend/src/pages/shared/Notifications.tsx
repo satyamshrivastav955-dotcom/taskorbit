@@ -55,17 +55,17 @@ export function Notifications(): JSX.Element {
     switch (type) {
       case 'conflict':
       case 'system':
-        return <AlertTriangle size={18} color="#EF4444" />;
+        return <AlertTriangle size={18} color="var(--danger)" />;
       case 'approval':
-        return <CheckCircle2 size={18} color="#10B981" />;
+        return <CheckCircle2 size={18} color="var(--success)" />;
       case 'submission':
       case 'revision':
       case 'status_change':
-        return <Clock size={18} color="#F59E0B" />;
+        return <Clock size={18} color="var(--warning)" />;
       case 'mention':
-        return <MessageSquare size={18} color="#6366F1" />;
+        return <MessageSquare size={18} color="var(--professional-blue)" />;
       default:
-        return <Bell size={18} color="#6366F1" />;
+        return <Bell size={18} color="var(--professional-blue)" />;
     }
   };
 
@@ -74,12 +74,12 @@ export function Notifications(): JSX.Element {
   return (
     <AppLayout role={role}>
       <PageContainer>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '8px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <h1 style={{ fontSize: '26px', fontWeight: 700, margin: 0 }}>Notifications</h1>
               {unreadCount > 0 && (
-                <span style={{ background: 'var(--red-100)', color: 'var(--red-700)', padding: '2px 8px', borderRadius: '9999px', fontSize: '12px', fontWeight: 700 }}>
+                <span style={{ background: 'var(--pale-blue)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '9999px', fontSize: '12px', fontWeight: 700 }}>
                   {unreadCount} unread
                 </span>
               )}
@@ -159,10 +159,10 @@ export function Notifications(): JSX.Element {
               <div
                 key={item.id}
                 style={{
-                  display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+                  display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px',
                   padding: '16px 20px', borderRadius: '12px',
-                  background: item.read ? '#FFFFFF' : '#F0F4FF',
-                  border: item.read ? '1px solid var(--border-color)' : '1px solid #BFDBFE',
+                  background: item.read ? 'var(--surface)' : 'var(--pale-blue)',
+                  border: item.read ? '1px solid var(--border-color)' : '1px solid var(--info-border)',
                   boxShadow: 'var(--shadow-sm)', cursor: 'pointer',
                 }}
                 role="link"
@@ -171,7 +171,7 @@ export function Notifications(): JSX.Element {
                 onClick={() => { void openItem(item); }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: item.read ? '#F1F5F9' : '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-md)', background: item.read ? 'var(--surface-muted)' : 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {getIcon(item.type)}
                   </div>
                   <div>
@@ -194,7 +194,7 @@ export function Notifications(): JSX.Element {
                   {item.link !== '' && (
                     <button
                       onClick={() => { void openItem(item); }}
-                      style={{ padding: '6px 12px', borderRadius: '6px', background: '#EEF2FF', border: 'none', color: 'var(--primary-600)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      style={{ padding: '6px 12px', borderRadius: '6px', background: 'var(--surface)', border: '1px solid var(--info-border)', color: 'var(--primary)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                     >
                       <span>View</span>
                       <ExternalLink size={12} />

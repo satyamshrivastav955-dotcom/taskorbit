@@ -165,7 +165,7 @@ export function CreateProjectModal({ onClose }: CreateProjectModalProps): JSX.El
             {files.length > 0 && <small>{files.length} file(s) selected</small>}
           </div>
 
-          {error !== '' && <p role="alert" style={{ color: '#EF4444', fontSize: '13px' }}>{error}</p>}
+          {error !== '' && <p role="alert" style={{ color: 'var(--danger-dark)', fontSize: '13px' }}>{error}</p>}
 
           <div className={styles.footer}>
             <button type="button" className={styles.cancelBtn} onClick={onClose}>
