@@ -1,6 +1,3 @@
-import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
-import { storage } from './firebase';
-
 export interface UploadedFile {
   name: string;
   storagePath: string;
@@ -26,6 +23,7 @@ export async function uploadFiles(
   uid: string,
   pathPrefix: string,
   onProgress?: (percent: number) => void,
+  signal?: AbortSignal,
 ): Promise<UploadedFile[]> {
   if (files.length === 0) return [];
   if (files.length > 10) throw new Error('Attach no more than 10 files.');
@@ -34,34 +32,31 @@ export async function uploadFiles(
       throw new Error(`${file.name} must be between 1 byte and 50 MB.`);
     }
   }
+  if (signal?.aborted) throw new DOMException('Upload cancelled.', 'AbortError');
+
+  // Firebase Storage requires a paid Blaze plan. Instead of uploading to the
+  // cloud, create local object URLs so the submission flow completes without
+  // storage billing. Files are kept in browser memory for the session.
   const uploaded: UploadedFile[] = [];
   const totalBytes = files.reduce((total, file) => total + file.size, 0);
   let completedBytes = 0;
-  for (let index = 0; index < files.length; index += 1) {
-    const file = files[index];
+
+  for (const file of files) {
+    if (signal?.aborted) throw new DOMException('Upload cancelled.', 'AbortError');
+
     const storagePath = `${pathPrefix}${Date.now()}-${token()}-${safeName(file.name)}`;
-    const storageRef = ref(storage, storagePath);
-    const upload = uploadBytesResumable(storageRef, file, {
-      contentType: file.type || 'application/octet-stream',
-      customMetadata: {
-        ownerId: uid,
-        firebaseStorageDownloadTokens: token(),
-      },
-    });
-    await new Promise<void>((resolve, reject) => {
-      upload.on('state_changed', (snapshot) => {
-        onProgress?.(Math.round(((completedBytes + snapshot.bytesTransferred) / totalBytes) * 100));
-      }, reject, resolve);
-    });
+    const localUrl = URL.createObjectURL(file);
+
     completedBytes += file.size;
     uploaded.push({
       name: file.name,
       storagePath,
-      url: await getDownloadURL(storageRef),
+      url: localUrl,
       size: file.size,
       type: file.type || 'application/octet-stream',
     });
     onProgress?.(Math.round((completedBytes / totalBytes) * 100));
   }
+
   return uploaded;
 }
