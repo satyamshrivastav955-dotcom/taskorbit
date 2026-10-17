@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, CheckSquare, Inbox, Loader2 } from 'lucide-react';
 import { AppLayout, PageContainer } from '../../components/layout/AppLayout';
 import { PriorityBadge } from '../../components/ui/PriorityBadge';
@@ -13,6 +13,8 @@ export function ReviewQueue(): JSX.Element {
   const [filterTab, setFilterTab] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [, setTick] = useState(0);
+  const [searchParams] = useSearchParams();
+  const pinnedProject = searchParams.get('project') || undefined;
 
   useEffect(() => dataStore.subscribe(() => setTick((t) => t + 1)), []);
 
@@ -22,7 +24,7 @@ export function ReviewQueue(): JSX.Element {
   const projects = dataStore.getProjects();
   const loading = dataStore.isLoading();
   const error = dataStore.getError();
-  const queueItems = tasks.filter((task) => task.status === 'submitted' || task.status === 'in_review');
+  const queueItems = tasks.filter((task) => (pinnedProject ? task.projectId === pinnedProject : true) && (task.status === 'submitted' || task.status === 'in_review'))
   const filtered = queueItems.filter((item) => {
     const project = projects.find((p) => p.id === item.projectId);
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -41,7 +43,7 @@ export function ReviewQueue(): JSX.Element {
               Every item here is a real submission waiting for your decision.
             </p>
           </div>
-          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{queueItems.length} awaiting review</span>
+          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{queueItems.length} awaiting review{pinnedProject ? ` · project ${pinnedProject}` : ''}</span>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>

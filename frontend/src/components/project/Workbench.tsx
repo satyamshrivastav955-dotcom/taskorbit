@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, ArrowRight, ArrowUpRight, CheckCircle2, FileCheck2, FolderKanban, Inbox } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowRight, ArrowUpRight, CalendarClock, CheckCheck, CheckCircle2, FileCheck2, FolderKanban, Inbox, Layers3 } from 'lucide-react';
 import { AppLayout, PageContainer, PageHeader } from '../layout/AppLayout';
 import { Avatar } from '../ui/Avatar';
 import { ProgressBar } from '../ui/ProgressBar';
@@ -9,7 +9,7 @@ import { PriorityBadge } from '../ui/PriorityBadge';
 import { Skeleton, EmptyState } from '../ui/State';
 import { dataStore } from '../../services/dataService';
 import { formatDate } from '../../utils/dates';
-import type { Role, Task } from '../../types';
+import type { Role, Project, Task } from '../../types';
 import styles from './Workbench.module.css';
 
 const copy: Record<Role, { title: string; description: string; queue: string; empty: string; signal: string }> = {
@@ -34,6 +34,11 @@ function taskPath(role: Role, task: Task): string {
   return role === 'reviewer' ? `/reviewer/reviews/${task.id}` : `/${role}/tasks/${task.id}`;
 }
 
+function projectPath(role: Role, project: Project): string {
+  if (role === 'reviewer') return `/reviewer/queue?project=${encodeURIComponent(project.id)}`;
+  return role === 'client' ? `/client/projects/${project.id}` : `/manager/projects/${project.id}`;
+}
+
 export function Workbench({ role }: { role: Role }): JSX.Element {
   const [, render] = useState(0);
   useEffect(() => dataStore.subscribe(() => render((value) => value + 1)), []);
@@ -51,6 +56,8 @@ export function Workbench({ role }: { role: Role }): JSX.Element {
   const overdue = active.filter((task) => task.deadline < todayKey);
   const revisions = active.filter((task) => task.status === 'revision');
   const reviews = tasks.filter((task) => ['submitted', 'in_review'].includes(task.status));
+  const inProgress = active.filter((task) => task.status === 'in_progress');
+  const approved = tasks.filter((task) => task.status === 'approved');
   const conflicts = role === 'manager' ? dataStore.getConflicts() : [];
   const activities = dataStore.getActivities().slice(0, 5);
   const loading = dataStore.isLoading();
@@ -62,6 +69,11 @@ export function Workbench({ role }: { role: Role }): JSX.Element {
   const viewAll = role === 'client' ? '/client/projects' : role === 'reviewer' ? '/reviewer/queue' : `/${role}/tasks`;
   const projectCount = projects.filter((project) => project.status !== 'completed').length;
   const attentionCount = role === 'manager' ? conflicts.length + overdue.length : revisions.length + overdue.length;
+  const attentionItems = [
+    ...(role === 'manager' && conflicts.length > 0 ? [{ kind: 'conflict', label: 'Schedule overlaps', detail: `${conflicts.length} conflict${conflicts.length === 1 ? '' : 's'} to review`, path: '/manager/conflicts' }] : []),
+    ...(overdue.length > 0 ? [{ kind: 'overdue', label: 'Delivery deadlines', detail: `${overdue.length} overdue task${overdue.length === 1 ? '' : 's'}`, path: viewAll }] : []),
+    ...(revisions.length > 0 ? [{ kind: 'revision', label: 'Revision requests', detail: `${revisions.length} task${revisions.length === 1 ? '' : 's'} need another pass`, path: viewAll }] : []),
+  ].slice(0, 3);
   const signalItems = [
     { label: role === 'reviewer' ? 'Waiting for review' : 'Active projects', value: role === 'reviewer' ? reviews.length : projectCount, detail: role === 'reviewer' ? 'submissions in queue' : 'projects in motion', tone: 'sage' },
     { label: role === 'manager' ? 'Schedule signals' : 'Awaiting a decision', value: role === 'manager' ? conflicts.length : reviews.length, detail: role === 'manager' ? (conflicts.length > 0 ? 'overlaps to resolve' : 'No active scheduling conflicts') : 'items in review', tone: role === 'manager' && conflicts.length > 0 ? 'terracotta' : 'gold' },
@@ -83,6 +95,33 @@ export function Workbench({ role }: { role: Role }): JSX.Element {
           description={info.description}
           action={<Link className={styles.headerAction} to={viewAll}>{role === 'client' ? 'All projects' : role === 'reviewer' ? 'Review queue' : 'All tasks'}<ArrowUpRight size={15} /></Link>}
         />
+
+        <section className={styles.metricGrid} aria-label="Workspace summary">
+          <article className={`${styles.metricCard} ${styles.metricBlue}`}>
+            <div className={styles.metricTop}><span className={styles.metricIcon}><Layers3 size={16} /></span><span className={styles.metricContext}>CURRENT</span></div>
+            <strong>{loading ? '—' : projectCount}</strong>
+            <span className={styles.metricLabel}>Open projects</span>
+            <span className={styles.metricDetail}>Projects in motion</span>
+          </article>
+          <article className={`${styles.metricCard} ${styles.metricTeal}`}>
+            <div className={styles.metricTop}><span className={styles.metricIcon}><Activity size={16} /></span><span className={styles.metricContext}>IN MOTION</span></div>
+            <strong>{loading ? '—' : inProgress.length}</strong>
+            <span className={styles.metricLabel}>In progress</span>
+            <span className={styles.metricDetail}>{approved.length} approved task{approved.length === 1 ? '' : 's'} overall</span>
+          </article>
+          <article className={`${styles.metricCard} ${styles.metricIndigo}`}>
+            <div className={styles.metricTop}><span className={styles.metricIcon}><CheckCheck size={16} /></span><span className={styles.metricContext}>DECISIONS</span></div>
+            <strong>{loading ? '—' : reviews.length}</strong>
+            <span className={styles.metricLabel}>{role === 'reviewer' ? 'Waiting for review' : 'Awaiting review'}</span>
+            <span className={styles.metricDetail}>Ready for a decision</span>
+          </article>
+          <article className={`${styles.metricCard} ${styles.metricAmber}`}>
+            <div className={styles.metricTop}><span className={styles.metricIcon}><CalendarClock size={16} /></span><span className={styles.metricContext}>SIGNALS</span></div>
+            <strong>{loading ? '—' : attentionCount}</strong>
+            <span className={styles.metricLabel}>Needs attention</span>
+            <span className={styles.metricDetail}>{role === 'manager' ? 'Overdue or overlapping' : 'Revision or overdue'}</span>
+          </article>
+        </section>
 
         <section className={styles.signalBand} aria-label="Workspace signals">
           <div className={styles.signalIntro}>
@@ -110,7 +149,7 @@ export function Workbench({ role }: { role: Role }): JSX.Element {
             </div>
             <div className={styles.tableHeader}><span>Project</span><span>Progress</span><span>Delivery</span><span>State</span></div>
             {loading && projects.length === 0 ? <Skeleton rows={4} /> : projectList.length === 0 ? <EmptyState text={info.empty} hint={role === 'client' ? 'Use New Request to share your goals and first requirements.' : 'Client requests appear here, ready to turn into a delivery plan.'} /> : <div className={styles.projectList}>
-              {projectList.map((project, index) => <Link key={project.id} className={styles.projectRow} to={`/${role}/projects/${project.id}`}>
+              {projectList.map((project, index) => <Link key={project.id} className={styles.projectRow} to={projectPath(role, project)}>
                 <span className={styles.projectIndex}>{String(index + 1).padStart(2, '0')}</span>
                 <span className={styles.projectMark}><FolderKanban size={17} /></span>
                 <span className={styles.projectInfo}><strong>{project.title}</strong><span>{role === 'manager' ? project.clientName || 'Client request' : project.description || `Due ${formatDate(project.deadline)}`}</span></span>
@@ -123,6 +162,13 @@ export function Workbench({ role }: { role: Role }): JSX.Element {
           </section>
 
           <aside className={styles.rail}>
+            <section className={`${styles.panel} ${styles.attentionPanel}`}>
+              <div className={styles.panelHead}><div><span className={styles.kicker}>DECISION QUEUE</span><h2>Worth your attention</h2><p>Signals that can slow the next handoff.</p></div><span className={styles.attentionCount}>{attentionCount}</span></div>
+              {attentionItems.length === 0 ? <div className={styles.quietState}><CheckCircle2 size={18} /><strong>No open signals</strong><p>Your active work is moving without a blocker.</p></div> : <div className={styles.attentionList}>{attentionItems.map((item) => <Link className={styles.attentionItem} key={item.kind} to={item.path}>
+                <span className={`${styles.attentionIcon} ${styles[item.kind]}`}>{item.kind === 'overdue' ? <CalendarClock size={15} /> : item.kind === 'revision' ? <AlertTriangle size={15} /> : <Activity size={15} />}</span>
+                <span><strong>{item.label}</strong><small>{item.detail}</small></span><ArrowUpRight size={14} />
+              </Link>)}</div>}
+            </section>
             <section className={`${styles.panel} ${styles.nextPanel}`}>
               <div className={styles.panelHead}><div><span className={styles.kicker}>UP NEXT</span><h2>{info.queue}</h2><p>Ordered by the moment it matters.</p></div></div>
               {loading && tasks.length === 0 ? <Skeleton rows={4} /> : queue.length === 0 ? <EmptyState text={info.empty} hint={role === 'reviewer' ? 'New submissions will appear here when they are ready for your decision.' : 'New assignments will appear here as your projects move forward.'} /> : <div className={styles.taskList}>{queue.slice(0, 4).map((task) => <Link key={task.id} className={styles.taskRow} to={taskPath(role, task)}>
