@@ -2,8 +2,7 @@ const express=require('express');
 const {verifyToken,requireRole}=require('../middleware/auth');
 const tasks=require('../controllers/tasks'),projects=require('../controllers/projects'),exp=require('../controllers/export');
 const {workspace}=require('../controllers/workspace');
-const {removeNotification}=require('../controllers/activity');
-const {log}=require('../controllers/activity');
+const {log,removeNotification,markNotificationRead,markAllNotificationsRead}=require('../controllers/activity');
 const auth=require('../controllers/auth');
 const collaboration=require('../controllers/collaboration');
 const router=express.Router();
@@ -23,6 +22,8 @@ router.post('/projects/:id/requirements',requireRole('client'),wrap(projects.req
 router.post('/projects/:id/documents',requireRole('client'),wrap(projects.document));
 router.post('/projects/:id/feedback',requireRole('client'),wrap(projects.feedback));
 router.delete('/notifications/:id',wrap(removeNotification));
+router.patch('/notifications/:id/read',wrap(markNotificationRead));
+router.post('/notifications/read-all',wrap(markAllNotificationsRead));
 router.post('/projects/:projectId/tasks',requireRole('manager'),wrap(tasks.createTask));
 router.put('/tasks/:id',requireRole('manager'),wrap(tasks.updateTask));
 router.post('/tasks/:id/reassign',requireRole('manager'),wrap(tasks.reassign));

@@ -61,4 +61,24 @@ async function removeNotification(req, res) {
   return res.json({ ok: true });
 }
 
-module.exports = { log, removeNotification };
+// Mark one of the caller's own notifications as read.
+async function markNotificationRead(req, res) {
+  const ref = db().collection('notifications').doc(req.params.id);
+  const snap = await ref.get();
+  if (!snap.exists) return err(res, 404, 'not-found', 'Notification not found');
+  if (snap.data().userId !== req.user.uid) return err(res, 403, 'forbidden', 'Not your notification');
+  if (snap.data().read === true) return res.json({ ok: true });
+  await ref.update({ read: true });
+  return res.json({ ok: true });
+}
+
+// Mark all of the caller's unread notifications as read.
+async function markAllNotificationsRead(req, res) {
+  const snap = await db().collection('notifications').where('userId', '==', req.user.uid).where('read', '==', false).get();
+  const batch = db().batch();
+  for (const doc of snap.docs) batch.update(doc.ref, { read: true });
+  if (!snap.empty) await batch.commit();
+  return res.json({ ok: true, count: snap.size });
+}
+
+module.exports = { log, removeNotification, markNotificationRead, markAllNotificationsRead };

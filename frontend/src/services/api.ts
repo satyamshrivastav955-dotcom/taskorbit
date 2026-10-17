@@ -27,6 +27,11 @@ export async function apiPut(path: string, body: unknown): Promise<unknown> {
   return handle(res, true);
 }
 
+export async function apiPatch(path: string, body: unknown): Promise<unknown> {
+  const res = await fetch(`${base}${path}`, { method: 'PATCH', headers: await headers(), body: JSON.stringify(body) });
+  return handle(res, true);
+}
+
 export async function apiGet(path: string): Promise<unknown> {
   const res = await fetch(`${base}${path}`, { headers: await headers() });
   return handle(res);

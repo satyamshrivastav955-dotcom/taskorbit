@@ -6,7 +6,7 @@ import {
 } from 'firebase/firestore';
 import { onIdTokenChanged } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { apiGet, apiPost, apiPut, apiDelete } from './api';
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete } from './api';
 import { uploadFiles } from './uploads';
 import type {
   Project,
@@ -598,26 +598,11 @@ class DataStore {
 
   // ---------- conflict reporting (server conflictWith + same formula) ----------
 
-  public detectConflicts(): void {
-    for (const t of this.tasks) {
-      if (t.status === 'approved') {
-        t.conflictWith = [];
-        continue;
-      }
-      const keep = new Set(t.conflictWith);
-      for (const o of this.tasks) {
-        if (o.id === t.id || o.assigneeId !== t.assigneeId || o.status === 'approved') continue;
-        if (new Date(t.startDate).getTime() <= new Date(o.deadline).getTime()
-          && new Date(o.startDate).getTime() <= new Date(t.deadline).getTime()) {
-          keep.add(o.id);
-        }
-      }
-      t.conflictWith = [...keep];
-    }
-  }
-
   public getConflicts(): ConflictDetail[] {
-    this.detectConflicts();
+    // Conflict calculation lives on the trusted server (conflictService.js) and is
+    // persisted to tasks.conflictWith. Read those values directly; never recompute
+    // or overwrite them here, so the sidebar badge, Conflicts page, and Timeline
+    // all reflect the same server-calculated conflicts.
     const result: ConflictDetail[] = [];
     const seen = new Set<string>();
     for (const t of this.tasks) {
@@ -817,6 +802,7 @@ class DataStore {
     taskId: string,
     input: { note: string; files: File[] },
     onProgress?: (pct: number) => void,
+    signal?: AbortSignal,
   ): Promise<{ submissionId: string; version: number }> {
     const task = this.getTaskById(taskId);
     if (task === undefined) throw new Error('Task not found.');
@@ -826,6 +812,7 @@ class DataStore {
       this.me.uid,
       `projects/${task.projectId}/submissions/${taskId}/`,
       onProgress,
+      signal,
     );
     const res = (await apiPost(`/tasks/${taskId}/submit`, {
       files: uploaded.map(({ name, storagePath }) => ({ name, storagePath })),
@@ -861,15 +848,14 @@ class DataStore {
   }
 
   public async markNotificationRead(id: string): Promise<void> {
-    await updateDoc(doc(db, 'notifications', id), { read: true });
+    await apiPatch(`/notifications/${id}/read`, {});
     this.notifications = this.notifications.map((item) => item.id === id ? { ...item, read: true } : item);
     this.notify();
   }
 
   public async markAllNotificationsRead(): Promise<void> {
-    const ids = this.notifications.filter((item) => !item.read).map((item) => item.id);
-    await Promise.all(ids.map((id) => updateDoc(doc(db, 'notifications', id), { read: true })));
-    this.notifications = this.notifications.map((item) => ids.includes(item.id) ? { ...item, read: true } : item);
+    await apiPost('/notifications/read-all', {});
+    this.notifications = this.notifications.map((item) => ({ ...item, read: true }));
     this.notify();
   }
 
