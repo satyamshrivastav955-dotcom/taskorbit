@@ -54,6 +54,8 @@ export function CreateTaskModal({ onClose, defaultProjectId, defaultAssigneeId, 
   const [conflict, setConflict] = useState<{ items: Array<{ taskTitle: string; range: string }>; draft: Draft } | null>(null);
   const requirements = dataStore.getRequirements(projectId);
   const dialogRef = useDialog(onClose, pending);
+  const hasAssignees = users.length > 0;
+  const hasReviewers = reviewers.length > 0;
 
   function draft(): Draft {
     return { projectId, title: title.trim(), description, assigneeId, reviewerId, startDate, deadline: dueDate, priority, labels: labels.split(',').map((label) => label.trim()).filter(Boolean), requirementIds, subtaskTitles: checklist.split('\n').map((item) => item.trim()).filter(Boolean) };
@@ -138,20 +140,20 @@ export function CreateTaskModal({ onClose, defaultProjectId, defaultAssigneeId, 
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.row}>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="create-task-title">Task Title *</label>
-              <input id="create-task-title" type="text" className={styles.input} placeholder="e.g. Design hero section"
-                value={title} onChange={(e) => setTitle(e.target.value)} required />
+          <form onSubmit={handleSubmit} className={styles.form} aria-describedby={error !== '' ? 'create-task-error' : undefined}>
+            <div className={styles.row}>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="create-task-title">Task Title *</label>
+                <input id="create-task-title" type="text" className={styles.input} placeholder="e.g. Design hero section"
+                  value={title} onChange={(e) => setTitle(e.target.value)} required aria-required="true" />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="create-task-project">Project *</label>
+                <select id="create-task-project" className={styles.select} value={projectId} onChange={(e) => { setProjectId(e.target.value); setRequirementIds([]); }} required aria-required="true">
+                  {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+              </div>
             </div>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="create-task-project">Project *</label>
-              <select id="create-task-project" className={styles.select} value={projectId} onChange={(e) => { setProjectId(e.target.value); setRequirementIds([]); }}>
-                {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-              </select>
-            </div>
-          </div>
 
           {requirements.length > 0 && (
             <div className={styles.field}>
@@ -163,41 +165,41 @@ export function CreateTaskModal({ onClose, defaultProjectId, defaultAssigneeId, 
             </div>
           )}
 
-          <div className={styles.row}>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="create-task-assignee">Assignee *</label>
-              <select id="create-task-assignee" className={styles.select} value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
-                {users.map((u) => <option key={u.uid} value={u.uid}>{u.name} ({u.jobTitle ?? u.role})</option>)}
-              </select>
+            <div className={styles.row}>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="create-task-assignee">Assignee *</label>
+                <select id="create-task-assignee" className={styles.select} value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} required aria-required="true">
+                  {!hasAssignees ? <option value="">No assignees available</option> : users.map((u) => <option key={u.uid} value={u.uid}>{u.name} ({u.jobTitle ?? u.role})</option>)}
+                </select>
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="create-task-reviewer">Reviewer *</label>
+                <select id="create-task-reviewer" className={styles.select} value={reviewerId} onChange={(e) => setReviewerId(e.target.value)} required aria-required="true">
+                  {!hasReviewers ? <option value="">No reviewers available</option> : reviewers.map((u) => <option key={u.uid} value={u.uid}>{u.name}</option>)}
+                </select>
+              </div>
             </div>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="create-task-reviewer">Reviewer *</label>
-              <select id="create-task-reviewer" className={styles.select} value={reviewerId} onChange={(e) => setReviewerId(e.target.value)}>
-                {reviewers.map((u) => <option key={u.uid} value={u.uid}>{u.name}</option>)}
-              </select>
-            </div>
-          </div>
 
-          <div className={styles.row}>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="create-task-start">Start Date *</label>
-              <input id="create-task-start" type="date" className={styles.input} value={startDate}
-                onChange={(e) => setStartDate(e.target.value)} required />
+            <div className={styles.row}>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="create-task-start">Start Date *</label>
+                <input id="create-task-start" type="date" className={styles.input} value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)} required aria-required="true" />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="create-task-deadline">Due Date *</label>
+                <input id="create-task-deadline" type="date" className={styles.input} value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)} required aria-required="true" />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="create-task-priority">Priority *</label>
+                <select id="create-task-priority" className={styles.select} value={priority} onChange={(e) => setPriority(e.target.value as Priority)} required aria-required="true">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
             </div>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="create-task-deadline">Due Date *</label>
-              <input id="create-task-deadline" type="date" className={styles.input} value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)} required />
-            </div>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="create-task-priority">Priority *</label>
-              <select id="create-task-priority" className={styles.select} value={priority} onChange={(e) => setPriority(e.target.value as Priority)}>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-          </div>
 
           <div className={styles.field}>
             <label className={styles.label} htmlFor="create-task-description">Description</label>
@@ -226,7 +228,7 @@ export function CreateTaskModal({ onClose, defaultProjectId, defaultAssigneeId, 
             </div>
           </div>
 
-          {error !== '' && <p role="alert" style={{ color: '#EF4444', fontSize: '13px' }}>{error}</p>}
+          {error !== '' && <p id="create-task-error" role="alert" style={{ color: 'var(--danger-dark)', fontSize: '13px' }}>{error}</p>}
 
           <div className={styles.footer}>
             <button type="button" className={styles.cancelBtn} onClick={onClose}>
